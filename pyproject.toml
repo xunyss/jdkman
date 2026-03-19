@@ -1,0 +1,31 @@
+[project]
+name = "jdkman"
+version = "0.1.23"
+description = "A command-line tool for installing and managing OpenJDK distributions."
+authors = [{name = "junghun.song", email = "xunyss@gmail.com"}]
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "requests>=2.32.5",
+    "typer-slim>=0.24.0",
+]
+
+[project.scripts]
+jdk = "jdkman.cli:app"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[build-system]
+requires = ["uv_build >= 0.8.14, <0.11.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+]
+

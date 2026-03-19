@@ -1,0 +1,106 @@
+name: Publish to PyPI and Build Bottle
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  publish-pypi:
+    runs-on: ubuntu-latest
+    if: github.event.base_ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Check version matches tag
+        run: |
+          TAG_VERSION=${GITHUB_REF_NAME#v}
+          PKG_VERSION=$(uv version --short)
+          if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
+            echo "Tag $TAG_VERSION != package version $PKG_VERSION"
+            exit 1
+          fi
+
+      - name: Build
+        run: uv build
+
+      - name: Publish
+        run: uv publish
+        env:
+          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_TOKEN }}
+
+  publish-homebrew:
+    runs-on: macos-latest
+    needs: publish-pypi
+    if: github.event.base_ref == 'refs/heads/main'
+    env:
+      HOMEBREW_NO_AUTO_UPDATE: 1
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Wait for PyPI to propagate
+        run: sleep 60
+
+      - name: Get version
+        id: version
+        run: echo "VERSION=$(uv version --short)" >> $GITHUB_OUTPUT
+
+      - name: Checkout homebrew-tap
+        uses: actions/checkout@v6
+        with:
+          repository: xunyss/homebrew-tap
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          path: homebrew-tap
+
+      - name: Generate Formula
+        run: uv export --no-hashes --format requirements-txt | python scripts/generate_formula.py ${{ steps.version.outputs.VERSION }} > homebrew-tap/Formula/jdkman.rb
+
+      - name: Install Homebrew tap
+        run: |
+          brew tap xunyss/tap homebrew-tap
+          rsync -a ./homebrew-tap/ $(brew --repo xunyss/tap)/
+
+      - name: Build bottle
+        run: |
+          brew install --build-bottle xunyss/tap/jdkman
+          brew bottle --json --root-url "https://github.com/xunyss/jdkman/releases/download/v${{ steps.version.outputs.VERSION }}" xunyss/tap/jdkman
+
+      - name: Fix bottle filename (double dash to single dash)
+        run: |
+          for f in jdkman--*.tar.gz; do
+            [ -f "$f" ] || continue
+            newname=$(echo "$f" | sed 's/jdkman--/jdkman-/')
+            mv "$f" "$newname"
+          done
+
+      - name: Create GitHub Release and upload bottle
+        env:
+          GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          VERSION=${{ steps.version.outputs.VERSION }}
+          gh release create "v${VERSION}" --repo xunyss/jdkman --title "v${VERSION}" --notes "Release v${VERSION}" jdkman-*.tar.gz
+
+      - name: Insert bottle block into Formula
+        run: |
+          JSON=$(ls jdkman--*.bottle.json jdkman-*.bottle.json 2>/dev/null | head -1)
+          python scripts/insert_bottle.py "$JSON" homebrew-tap/Formula/jdkman.rb
+
+      - uses: Homebrew/actions/git-user-config@master
+
+      - name: Commit Formula to homebrew-tap
+        working-directory: homebrew-tap
+        run: |
+          git add Formula/jdkman.rb
+          git commit -m "jdkman ${{ steps.version.outputs.VERSION }}"
+
+      - uses: Homebrew/actions/git-try-push@master
+        with:
+          directory: homebrew-tap
+          branch: main
+
