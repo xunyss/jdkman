@@ -23,11 +23,15 @@ No extra configuration needed.
 
 ---
 
-## Requirements
-
-- Python 3.12+
-
 ## Installation
+
+**Homebrew (recommended):**
+
+```bash
+brew install xunyss/tap/jdkman
+```
+
+**pip:**
 
 ```bash
 pip install jdkman

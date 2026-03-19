@@ -22,11 +22,15 @@ Gradle, IntelliJ 등 대부분의 개발 도구가 별도 설정 없이 바로 J
 
 ---
 
-## 요구사항
-
-- Python 3.12+
-
 ## 설치
+
+**Homebrew (권장):**
+
+```bash
+brew install xunyss/tap/jdkman
+```
+
+**pip:**
 
 ```bash
 pip install jdkman
