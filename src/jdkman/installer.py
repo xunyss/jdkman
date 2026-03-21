@@ -79,7 +79,6 @@ def find_dist_jvm_root(work_dir: Path) -> Path | None:
 
 def make_jvm_dir_name(slug_info: dict[str, Any]):
     log(f"make_jvm_dir_name()")
-    log(f"  slug_info: {pretty_repr(slug_info)}")
 
     _vendor_alias = {
         "graalvm": "graalvm-ce",
