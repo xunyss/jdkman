@@ -57,6 +57,8 @@ def download_jvm(dist_info: dict[str, Any]) -> Path:
                             file.write(chunk)
                             progress.update(task, advance=len(chunk))
 
+        out(f"Downloaded: [grey70]{dist_file.name}[/grey70]", highlight=False)
+
     return verify_checksum(dist_file, dist_info["checksum"])
 
 

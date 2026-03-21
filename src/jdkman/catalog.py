@@ -36,7 +36,7 @@ def fetch_artifacts() -> list[dict[str, Any]]:
         response.raise_for_status()
         artifacts: list[dict[str, Any]] = response.json()
         cache_catalog(artifacts)
-        out(f"{GREEN_CHECK} Fetched: {len(artifacts)}")
+        out(f"Fetched: {len(artifacts)}")
 
     return artifacts
 
