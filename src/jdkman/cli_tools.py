@@ -1,7 +1,4 @@
-import sys
-
 import typer
-from pygments import highlight
 
 from .config import is_macos
 from .console import out, log
@@ -42,5 +39,5 @@ def mise():
     """
     Integration with mise.
     """
-    out(f"mise()")
+    log(f"mise()")
 

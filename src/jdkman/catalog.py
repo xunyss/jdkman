@@ -1,14 +1,14 @@
 import json
-import time
+from typing import Any
 
 import requests
 
-from .config import CATALOG_CACHE_FILE, CATALOG_CACHE_TTL, JVM_API_URL
-from .console import out
+from .config import JVM_API_URL, cached_catalog, cache_catalog
+from .console import out, log, BLUE_ARROW, GREEN_CHECK
 from .utils import version_key
 
 
-def fetch_artifacts() -> list[dict]:
+def fetch_artifacts() -> list[dict[str, Any]]:
     """
     {
         "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
@@ -23,21 +23,25 @@ def fetch_artifacts() -> list[dict]:
         "version": "17.32.13.0"
     }
     """
-    if CATALOG_CACHE_FILE.exists() and (time.time() - CATALOG_CACHE_FILE.stat().st_mtime) < CATALOG_CACHE_TTL:
-        artifacts = json.loads(CATALOG_CACHE_FILE.read_text())
+    log(f"fetch_artifacts()")
+
+    cached = cached_catalog()
+    if cached:
+        artifacts = json.loads(cached)
+        log(f"  cache found: count: {len(artifacts)}")
     else:
-        out("==> Fetching JVM Database...")
+        log(f"  cache not found.")
+        out(f"{BLUE_ARROW} Fetching JVM Database...", highlight=False)
         response = requests.get(JVM_API_URL, timeout=30)
         response.raise_for_status()
-        artifacts: list[dict] = response.json()
-
-        CATALOG_CACHE_FILE.parent.mkdir(parents=True, exist_ok=True)
-        CATALOG_CACHE_FILE.write_text(json.dumps(artifacts))
+        artifacts: list[dict[str, Any]] = response.json()
+        cache_catalog(artifacts)
+        out(f"{GREEN_CHECK} Fetched: {len(artifacts)}")
 
     return artifacts
 
 
-def fetch_releases():
+def fetch_releases() -> list[dict[str, Any]]:
     """
     {
         "vendor": "zulu",
@@ -57,6 +61,8 @@ def fetch_releases():
         ]
     }
     """
+    log(f"fetch_releases()")
+
     _group_keys = ("vendor", "image_type", "features", "jvm_impl", "java_version", "version")
     _dist_keys = ("file_type", "url", "checksum", "created_at")
     releases: dict[tuple, dict] = {}
@@ -109,7 +115,7 @@ def make_slug(release_info: dict) -> str:
     return "-".join(parts)
 
 
-def fetch_slugs():
+def fetch_slugs() -> dict[str, dict[str, Any]]:
     """
     {
         "zulu-jre-17": {
@@ -139,6 +145,8 @@ def fetch_slugs():
         ...
     }
     """
+    log(f"fetch_slugs()")
+
     slugs: dict[str, dict] = {}
     for release in fetch_releases():
         release_info = {
@@ -167,7 +175,9 @@ def fetch_slugs():
     return slugs
 
 
-def sort_slugs(slugs: dict) -> dict:
+def sort_slugs(slugs: dict) -> dict[str, dict[str, Any]]:
+    log(f"sort_slugs()")
+
     # 3. dists 정렬: created_at
     def sort_dists(versions):
         return [

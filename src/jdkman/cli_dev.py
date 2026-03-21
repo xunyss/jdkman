@@ -8,7 +8,7 @@ from .console import ARGUMENT_SLUG
 from .console import out, log, GREEN_CHECK
 from .detect import scan_unmanaged
 from .installer import download_jvm
-from .registry import get_dist, get_slug
+from .registry import get_dist, get_slug, get_installed
 
 app = typer.Typer()
 
@@ -25,8 +25,10 @@ def dev_main(context: typer.Context):
 @app.command()
 def diff():
     """
-    Compare the file_type(.zip and .tar.gz) of artifacts.
+    diff between zip and tar.gz
     """
+    log(f"diff()")
+
     # (vendor, version, features, image_type) 기준으로 그루핑 후 file_type 수집
     groups: dict[tuple, set] = defaultdict(set)
     for artifact in fetch_artifacts():
@@ -45,50 +47,64 @@ def diff():
     out("=== zip only ===")
     for (vendor, version, features, image_type), _ in sorted(list(zip_only.items())):
         out(f"  {vendor:<20} {version:<30} {image_type}  {list(features)}")
-
     out()
+
     out("=== tar.gz only ===")
     for (vendor, version, features, image_type), _ in sorted(list(tar_only.items())):
         out(f"  {vendor:<20} {version:<30} {image_type}  {list(features)}")
 
 
 @app.command()
-def info(distro: ARGUMENT_SLUG):
-    """
-    Show information about a JVM distribution.
-    """
-    log(f"info()")
-    log(f"  distro: {distro}")
-    out(get_slug(distro))
-
-@app.command()
 def download(distro: ARGUMENT_SLUG):
     """
-    Install a JVM distribution.
+    download_jvm(get_dist(distro))
     """
     log(f"download()")
     log(f"  distro: {distro}")
-    install_dir = download_jvm(get_dist(distro))
-    out(f"Downloaded: {distro} {install_dir} {GREEN_CHECK}")
+
+    dist_file = download_jvm(get_dist(distro))
+    out(f"{GREEN_CHECK} Downloaded: [yellow]{distro}[/yellow] [grey70]{dist_file.name}[/grey70]", highlight=False)
+
+
+@app.command()
+def slug(distro: ARGUMENT_SLUG):
+    """
+    get_slug(distro)
+    """
+    log(f"info()")
+    log(f"  distro: {distro}")
+
+    out(get_slug(distro))
+
+
+@app.command()
+def installed():
+    """
+    get_installed()
+    """
+    log(f"installed()")
+
+    out(get_installed())
 
 
 @app.command()
 def cache():
     """
-    Show the paths within the cache directory.
+    CACHE_DIR.iterdir()
     """
     log(f"cache()")
     log(f"  CACHE_DIR: {CACHE_DIR}")
+
     for cached in CACHE_DIR.iterdir():
-        out(f"Path in cache: {cached}")
+        out(cached)
 
 
 @app.command()
 def scan():
     """
-    Scan the local filesystem for unmanaged JVM distributions.
+    scan_unmanaged()
     """
     log(f"scan()")
-    unmanaged = scan_unmanaged()
-    out(f"Unmanaged:", unmanaged)
+
+    out(scan_unmanaged())
 

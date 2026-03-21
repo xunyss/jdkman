@@ -1,8 +1,10 @@
 import importlib.metadata as meta
 import json
 import platform
+import time
 from importlib.metadata import version
 from pathlib import Path
+from typing import Any
 
 
 # JVM DATA API
@@ -67,7 +69,16 @@ CUSTOM_STYLE_TABLE = True
 
 # debugging
 FORCE_VERBOSE = is_dev() and True
-CLEAN_WORK_DIR = False
+CLEAN_WORK_DIR = not is_dev()
+
+
+def cached_catalog() -> str | None:
+    if CATALOG_CACHE_FILE.exists() and (time.time() - CATALOG_CACHE_FILE.stat().st_mtime) < CATALOG_CACHE_TTL:
+        return CATALOG_CACHE_FILE.read_text()
+    return None
+
+def cache_catalog(catalog: list[dict[str, Any]]):
+    CATALOG_CACHE_FILE.write_text(json.dumps(catalog))
 
 
 def init_dirs():

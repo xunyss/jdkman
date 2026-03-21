@@ -1,25 +1,34 @@
 import json
 import shutil
 from pathlib import Path
+from typing import Any
+
+import typer
+from rich.pretty import pretty_repr
 
 from .catalog import fetch_slugs, sort_slugs
 from .config import CACHE_DIR, MANAGED_JVM_DB
-from .console import log, out
+from .console import log, out, RED_WARNING
 from .utils import version_key
 
 
-def _read_managed() -> dict:
+def _read_managed() -> dict[str, dict[str, Any]]:
     if MANAGED_JVM_DB.is_file():
         return json.loads(MANAGED_JVM_DB.read_text())
     return _write_managed({})
 
 
-def _write_managed(managed: dict) -> dict:
+def _write_managed(managed: dict[str, dict[str, Any]]) -> dict[str, dict[str, Any]]:
     MANAGED_JVM_DB.write_text(json.dumps(managed))
     return managed
 
 
-def managed_add(slug:str, dist_info: dict, installed_dir: Path):
+def managed_add(slug: str, dist_info: dict[str, Any], installed_dir: Path):
+    log(f"managed_add()")
+    log(f"  slug: {slug}")
+    log(f"  dist_info: {pretty_repr(dist_info)}")
+    log(f"  installed_dir: {installed_dir}")
+
     managed = _read_managed()
     managed[slug] = dist_info | {
         "location": str(installed_dir)
@@ -31,17 +40,24 @@ def managed_add(slug:str, dist_info: dict, installed_dir: Path):
     _write_managed(managed)
 
 
-def managed_del(slug:str):
+def managed_del(slug: str):
+    log(f"managed_del()")
+    log(f"  slug: {slug}")
+
     managed = _read_managed()
     managed.pop(slug)
     _write_managed(managed)
 
 
-def get_installed():
+def get_installed() -> dict[str, dict[str, Any]]:
+    log(f"get_installed()")
+
     return _read_managed()
 
 
-def get_outdated():
+def get_outdated() -> dict[str, dict[str, Any]]:
+    log(f"get_outdated()")
+
     return {
         slug: {
             "installed": managed_info["version"],
@@ -52,19 +68,18 @@ def get_outdated():
     }
 
 
-def cleanup_cache():
-    log(f"cleanup_cache()")
-
-    for cached in CACHE_DIR.iterdir():
-        shutil.rmtree(cached) if cached.is_dir() else cached.unlink()
-        out(f"Remove: {cached}")
-
-
 def list_vendors() -> list[str]:
+    log(f"list_vendors()")
+
     return sorted({slug_info["vendor"] for slug_info in fetch_slugs().values()})
 
 
-def get_slugs(include_jre: bool, include_feature: bool, major_version: str | None) -> dict[str, dict]:
+def get_slugs(include_jre: bool, include_feature: bool, major_version: str | None) -> dict[str, dict[str, Any]]:
+    log(f"get_slugs()")
+    log(f"  include_jre: {include_jre}")
+    log(f"  include_feature: {include_feature}")
+    log(f"  major_version: {major_version}")
+
     return {
         slug: slug_info
         for slug, slug_info in sort_slugs(fetch_slugs()).items()
@@ -74,13 +89,24 @@ def get_slugs(include_jre: bool, include_feature: bool, major_version: str | Non
     }
 
 
-def get_slug(slug: str) -> dict:
-    return fetch_slugs().get(slug)
+def get_slug(slug: str) -> dict[str, Any]:
+    log(f"get_slug()")
+    log(f"  slug: {slug}")
+
+    slugs = fetch_slugs()
+    if slug not in slugs:
+        out(f"{RED_WARNING} [yellow]{slug}[/yellow] is invalid!", highlight=False)
+        raise typer.Exit(code=1)
+
+    return slugs.get(slug)
 
 
-def get_dist(slug: str, version: str | None = None) -> dict:
+def get_dist(slug: str, version: str | None = None) -> dict[str, Any]:
+    log(f"get_dist()")
+    log(f"  slug: {slug}")
+    log(f"  version: {version}")
+
     slug_info = get_slug(slug)
-
     search_version = version if version else slug_info["latest"]
     versions = slug_info["versions"]
     target_version = next(version for version in versions if version["version"] == search_version)
@@ -95,4 +121,12 @@ def get_dist(slug: str, version: str | None = None) -> dict:
         "java_version": target_version["java_version"],
         "version": target_version["version"],
     } | target_dist
+
+
+def cleanup_cache():
+    log(f"cleanup_cache()")
+
+    for cached in CACHE_DIR.iterdir():
+        shutil.rmtree(cached) if cached.is_dir() else cached.unlink()
+        log(f"Remove: {cached}")
 
