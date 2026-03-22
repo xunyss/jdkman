@@ -1,8 +1,9 @@
 import typer
 
 from .config import is_macos
-from .console import out, log
+from .console import out, log, ARGUMENT_SLUG, table, GREEN_CHECK
 from .detect import exec_java_home
+from .mise import mise_link, mise_ls
 
 
 app = typer.Typer()
@@ -35,9 +36,22 @@ if is_macos():
 
 
 @app.command(rich_help_panel="Tools")
-def mise():
+def mise(distro: ARGUMENT_SLUG = None):
     """
     Integration with mise.
     """
     log(f"mise()")
+    log(f"  distro: {distro}")
+
+    mise_tools = mise_link(distro) if distro else mise_ls()
+    tab = table("mise_tool", "version", "symlink", "installed", "active")
+    for mise_tool in mise_tools:
+        is_link = True if mise_tool.get("symlinked_to") else False
+        tab.add_row(
+            "java", mise_tool["version"], is_link and GREEN_CHECK or None,
+            mise_tool["installed"] and GREEN_CHECK or None,
+            mise_tool["active"] and GREEN_CHECK or None
+        )
+    out(tab if tab.row_count > 0
+        else f"{GREEN_CHECK} No mise java tools found.")
 

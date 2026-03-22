@@ -67,6 +67,8 @@ def vendors():
     """
     log(f"vendors()")
 
+    # todo: mise ls-remote java | grep -o '^[a-zA-Z0-9-]*-[a-zA-Z0-9]*' | sed 's/-[0-9].*//' | sort -u | grep -v '^$'
+
     # list_vendors()
     tab = table("vendor")
     for vendor in list_vendors():

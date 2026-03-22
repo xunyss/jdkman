@@ -52,6 +52,7 @@ def managed_del(slug: str):
 def get_installed() -> dict[str, dict[str, Any]]:
     log(f"get_installed()")
 
+    # todo: sorting
     return _read_managed()
 
 

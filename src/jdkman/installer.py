@@ -149,6 +149,9 @@ def uninstall_jvm(slug: str):
     log(f"uninstall_jvm()")
     log(f"  slug: {slug}")
 
+    # validate slug
+    get_slug(slug)
+
     # validate installed
     installed = get_installed()
     if slug not in installed:
