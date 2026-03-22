@@ -1,3 +1,5 @@
+from typing import Annotated
+
 import typer
 
 from .config import is_macos
@@ -36,9 +38,17 @@ if is_macos():
 
 
 @app.command(rich_help_panel="Tools")
-def mise(distro: ARGUMENT_SLUG = None):
+def mise(
+        distro: Annotated[str, typer.Argument(
+            help="JVM distribution name to register as a mise symlink. (omit to list)"
+        )] = None
+):
     """
-    Integration with mise.
+    Show or Register JVM distributions as mise java tools via symlink.
+
+    Examples:
+    -  jdk mise
+    -  jdk mise zulu-21
     """
     log(f"mise()")
     log(f"  distro: {distro}")

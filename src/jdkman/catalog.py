@@ -83,7 +83,7 @@ def fetch_releases() -> list[dict[str, Any]]:
     return list(releases.values())
 
 
-def make_slug(release_info: dict) -> str:
+def make_slug(release_info: dict[str, Any]) -> str:
     """
     features cases: [
         "[]",
@@ -115,7 +115,45 @@ def make_slug(release_info: dict) -> str:
     return "-".join(parts)
 
 
-def fetch_slugs() -> dict[str, dict[str, Any]]:
+def sort_slugs(slugs: dict[str, dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    log(f"sort_slugs()")
+
+    # 3. dists 정렬: created_at
+    def sort_dists(versions: list[dict[str, Any]]):
+        return [
+            {
+                **version,
+                "dists": sorted(version["dists"], key=lambda x: x["created_at"])
+            }
+            for version in versions
+        ]
+
+    # 2. versions 정렬: version
+    def sort_versions(versions: list[dict[str, Any]]):
+        sorted_versions = sorted(versions, key=lambda x: version_key(x["version"]))
+        return sort_dists(sorted_versions)
+
+    # 1. slug 객체 정렬: vendor, image_type, features[0], major_version
+    def slug_sort_key(slug_item: tuple[str, dict[str, Any]]):
+        slug, slug_info = slug_item
+        return (
+            slug_info["vendor"],
+            slug_info["image_type"],
+            slug_info["features"][0] if slug_info["features"] else "",
+            slug_info["jvm_impl"],
+            slug_info["major_version"],
+        )
+
+    return {
+        slug: {
+            **slug_info,
+            "versions": sort_versions(slug_info["versions"])
+        }
+        for slug, slug_info in sorted(slugs.items(), key=slug_sort_key)
+    }
+
+
+def fetch_slugs(sort: bool = False) -> dict[str, dict[str, Any]]:
     """
     {
         "zulu-jre-17": {
@@ -146,8 +184,9 @@ def fetch_slugs() -> dict[str, dict[str, Any]]:
     }
     """
     log(f"fetch_slugs()")
+    log(f"  sort: {sort}")
 
-    slugs: dict[str, dict] = {}
+    slugs: dict[str, dict[str, Any]] = {}
     for release in fetch_releases():
         release_info = {
             "vendor": release["vendor"],
@@ -172,42 +211,5 @@ def fetch_slugs() -> dict[str, dict[str, Any]]:
             "dists": release["dists"]
         })
 
-    return slugs
-
-
-def sort_slugs(slugs: dict) -> dict[str, dict[str, Any]]:
-    log(f"sort_slugs()")
-
-    # 3. dists 정렬: created_at
-    def sort_dists(versions):
-        return [
-            {
-                **version,
-                "dists": sorted(version["dists"], key=lambda x: x["created_at"])
-            }
-            for version in versions
-        ]
-
-    # 2. versions 정렬: version
-    def sort_versions(versions):
-        sorted_versions = sorted(versions, key=lambda x: version_key(x["version"]))
-        return sort_dists(sorted_versions)
-
-    # 1. slug 객체 정렬: vendor, image_type, features[0], major_version
-    def slug_sort_key(slug_item):
-        slug, slug_info = slug_item
-        return (
-            slug_info["vendor"],
-            slug_info["image_type"],
-            slug_info["features"][0] if slug_info["features"] else "",
-            slug_info["major_version"],
-        )
-
-    return {
-        slug: {
-            **slug_info,
-            "versions": sort_versions(slug_info["versions"])
-        }
-        for slug, slug_info in sorted(slugs.items(), key=slug_sort_key)
-    }
+    return sort_slugs(slugs) if sort else slugs
 

@@ -6,7 +6,7 @@ from typing import Any
 import typer
 from rich.pretty import pretty_repr
 
-from .catalog import fetch_slugs, sort_slugs
+from .catalog import fetch_slugs
 from .config import CACHE_DIR, MANAGED_JVM_DB
 from .console import log, out, RED_WARNING
 from .utils import version_key
@@ -49,11 +49,23 @@ def managed_del(slug: str):
     _write_managed(managed)
 
 
-def get_installed() -> dict[str, dict[str, Any]]:
-    log(f"get_installed()")
+def managed_sort_key(managed_item: tuple[str, dict[str, Any]]):
+    slug, managed_info = managed_item
+    return (
+        managed_info["vendor"],
+        managed_info["image_type"],
+        managed_info["features"][0] if managed_info["features"] else "",
+        managed_info["jvm_impl"],
+        managed_info["major_version"],
+    )
 
-    # todo: sorting
-    return _read_managed()
+
+def get_installed(sort: bool = False) -> dict[str, dict[str, Any]]:
+    log(f"get_installed()")
+    log(f"  sort: {sort}")
+
+    managed = _read_managed()
+    return dict(sorted(managed.items(), key=managed_sort_key)) if sort else managed
 
 
 def get_outdated() -> dict[str, dict[str, Any]]:
@@ -83,7 +95,7 @@ def get_slugs(include_jre: bool, include_feature: bool, major_version: str | Non
 
     return {
         slug: slug_info
-        for slug, slug_info in sort_slugs(fetch_slugs()).items()
+        for slug, slug_info in fetch_slugs(sort=True).items()
         if (include_jre or slug_info["image_type"] == "jdk")
            and (include_feature or not slug_info["features"])
            and (not major_version or major_version == str(slug_info["major_version"]))

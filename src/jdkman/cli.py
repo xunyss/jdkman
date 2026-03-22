@@ -49,7 +49,7 @@ def ls():
 
     # get_installed()
     tab = table("distro", "version", "location")
-    for slug, managed_info in get_installed().items():
+    for slug, managed_info in get_installed(sort=True).items():
         tab.add_row(slug, managed_info["version"], managed_info["location"])
     out(tab if tab.row_count > 0
         else f"{GREEN_CHECK} No installed JVM distributions.")
