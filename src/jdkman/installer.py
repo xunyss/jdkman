@@ -112,7 +112,7 @@ def move_jvm_dir(slug: str, work_dir: Path) -> Path:
     return INSTALL_DIR / renamed_jvm_dir.name
 
 
-def install_jvm(slug: str):
+def install_jvm(slug: str) -> Path:
     log(f"install_jvm()")
     log(f"  slug: {slug}")
 
@@ -145,7 +145,7 @@ def install_jvm(slug: str):
     return installed_dir
 
 
-def uninstall_jvm(slug: str):
+def uninstall_jvm(slug: str) -> Path:
     log(f"uninstall_jvm()")
     log(f"  slug: {slug}")
 
@@ -169,7 +169,7 @@ def uninstall_jvm(slug: str):
     return jvm_location
 
 
-def upgrade_jvm(slug: str):
+def upgrade_jvm(slug: str) -> Path:
     log(f"upgrade_jvm()")
     log(f"  slug: {slug}")
 
@@ -187,5 +187,5 @@ def upgrade_jvm(slug: str):
         raise typer.Exit()
 
     uninstall_jvm(slug)
-    install_jvm(slug)
+    return install_jvm(slug)
 
