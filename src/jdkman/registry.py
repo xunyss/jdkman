@@ -72,13 +72,14 @@ def get_installed(sort: bool = False) -> dict[str, dict[str, Any]]:
 def get_outdated() -> dict[str, dict[str, Any]]:
     log(f"get_outdated()")
 
+    slugs = fetch_slugs()
     return {
         slug: {
             "installed": managed_info["version"],
-            "latest": slug_info["latest"],
+            "latest": slugs[slug]["latest"],
         }
         for slug, managed_info in get_installed().items()
-        if version_key(managed_info["version"]) < version_key((slug_info := get_slug(slug))["latest"])
+        if version_key(managed_info["version"]) < version_key(slugs[slug]["latest"])
     }
 
 
