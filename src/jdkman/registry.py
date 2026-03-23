@@ -1,4 +1,5 @@
 import json
+import re
 import shutil
 from pathlib import Path
 from typing import Any
@@ -8,7 +9,7 @@ from rich.pretty import pretty_repr
 
 from .catalog import fetch_slugs
 from .config import CACHE_DIR, MANAGED_JVM_DB
-from .console import log, out, RED_WARNING
+from .console import log, out, RED_WARNING, st_div
 from .utils import version_key
 
 
@@ -87,6 +88,13 @@ def list_vendors() -> list[str]:
     return sorted({slug_info["vendor"] for slug_info in fetch_slugs().values()})
 
 
+def list_editions() -> list[str]:
+    log(f"list_editions()")
+
+    # mise ls-remote java | grep -o '^[a-zA-Z0-9-]*-[a-zA-Z0-9]*' | sed 's/-[0-9].*//' | sort -u | grep -v '^$'
+    return list(dict.fromkeys(re.sub(r'-\d+$', '', s) for s in fetch_slugs(sort=True).keys()))
+
+
 def get_slugs(include_jre: bool, include_feature: bool, major_version: str | None) -> dict[str, dict[str, Any]]:
     log(f"get_slugs()")
     log(f"  include_jre: {include_jre}")
@@ -97,7 +105,7 @@ def get_slugs(include_jre: bool, include_feature: bool, major_version: str | Non
         slug: slug_info
         for slug, slug_info in fetch_slugs(sort=True).items()
         if (include_jre or slug_info["image_type"] == "jdk")
-           and (include_feature or not slug_info["features"])
+           and (include_feature or not slug_info["features"] or slug_info["features"] == ["notarized"])
            and (not major_version or major_version == str(slug_info["major_version"]))
     }
 
@@ -108,7 +116,7 @@ def get_slug(slug: str) -> dict[str, Any]:
 
     slugs = fetch_slugs()
     if slug not in slugs:
-        out(f"{RED_WARNING} [yellow]{slug}[/yellow] is invalid!", highlight=False)
+        out(f"{RED_WARNING} {st_div(slug)} is invalid!", highlight=False)
         raise typer.Exit(code=1)
 
     return slugs.get(slug)

@@ -9,7 +9,7 @@ from rich.pretty import pretty_repr
 from rich.progress import Progress, BarColumn, DownloadColumn, TransferSpeedColumn, TimeRemainingColumn
 
 from .config import CACHE_DIR, INSTALL_DIR, CLEAN_WORK_DIR, is_macos, is_windows, is_linux
-from .console import log, out, BLUE_ARROW, RED_WARNING, GREEN_CHECK
+from .console import log, out, BLUE_ARROW, RED_WARNING, GREEN_CHECK, st_emp, st_div, st_nor
 from .registry import managed_add, get_installed, managed_del, get_outdated, get_dist, get_slug
 from .utils import extract_archive, sha256_file
 
@@ -40,7 +40,7 @@ def download_jvm(dist_info: dict[str, Any]) -> Path:
     dist_file = CACHE_DIR / filename
 
     if dist_file.exists():
-        out(f"Already downloaded: [grey70]{dist_file.name}[/grey70]", highlight=False)
+        out(f"Already downloaded: {st_div(dist_file.name)}", highlight=False)
     else:
         out(f"{BLUE_ARROW} Downloading JVM distribution...", highlight=False)
         with requests.get(dist_info["url"], stream=True, timeout=60) as request:
@@ -48,7 +48,7 @@ def download_jvm(dist_info: dict[str, Any]) -> Path:
             total = int(request.headers.get("content-length", 0))
             with open(dist_file, "wb") as file:
                 with Progress(
-                    f"[cyan]Downloading...[/cyan] [grey70]{filename}[/grey70]",
+                    f"Downloading... {st_nor(filename)}",
                     BarColumn(bar_width=None), DownloadColumn(), TransferSpeedColumn(), TimeRemainingColumn(),
                 ) as progress:
                     task = progress.add_task("", total=total)
@@ -57,7 +57,7 @@ def download_jvm(dist_info: dict[str, Any]) -> Path:
                             file.write(chunk)
                             progress.update(task, advance=len(chunk))
 
-        out(f"Downloaded: [grey70]{dist_file.name}[/grey70]", highlight=False)
+        out(f"Downloaded: {st_div(dist_file.name)}", highlight=False)
 
     return verify_checksum(dist_file, dist_info["checksum"])
 
@@ -118,7 +118,7 @@ def install_jvm(slug: str):
 
     # validate installed
     if slug in get_installed():
-        out(f"{RED_WARNING} [yellow]{slug}[/yellow] is already installed!", highlight=False)
+        out(f"{RED_WARNING} {st_emp(slug)} is already installed!", highlight=False)
         raise typer.Exit(code=-1)
 
     # download_jvm
@@ -155,7 +155,7 @@ def uninstall_jvm(slug: str):
     # validate installed
     installed = get_installed()
     if slug not in installed:
-        out(f"{RED_WARNING} [yellow]{slug}[/yellow] is not installed!", highlight=False)
+        out(f"{RED_WARNING} {st_emp(slug)} is not installed!", highlight=False)
         raise typer.Exit(code=-1)
 
     # delete jvm location
@@ -178,12 +178,12 @@ def upgrade_jvm(slug: str):
 
     # validate installed
     if slug not in get_installed():
-        out(f"{RED_WARNING} [yellow]{slug}[/yellow] is not installed!", highlight=False)
+        out(f"{RED_WARNING} {st_emp(slug)} is not installed!", highlight=False)
         raise typer.Exit(code=-1)
 
     # validate outdated
     if slug not in get_outdated():
-        out(f"{GREEN_CHECK} [yellow]{slug}[/yellow] is already up-to-date.", highlight=False)
+        out(f"{GREEN_CHECK} {st_emp(slug)} is already up-to-date.", highlight=False)
         raise typer.Exit()
 
     uninstall_jvm(slug)

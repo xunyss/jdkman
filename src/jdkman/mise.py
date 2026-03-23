@@ -6,7 +6,7 @@ from typing import Any
 import typer
 
 from .config import is_macos, is_windows, is_linux
-from .console import out, RED_WARNING, log
+from .console import out, RED_WARNING, log, st_emp, st_div, st_nor
 from .registry import get_installed, get_slug
 
 
@@ -40,7 +40,7 @@ def mise_link(slug: str) -> list[dict[str, Any]]:
 
     # check mise installed
     if not is_mise_enabled():
-        out(f"{RED_WARNING} [yellow]mise[/yellow] is not installed!", highlight=False)
+        out(f"{RED_WARNING} {st_div("mise")} is not installed!", highlight=False)
         raise typer.Exit(code=-1)
 
     # validate slug
@@ -49,13 +49,13 @@ def mise_link(slug: str) -> list[dict[str, Any]]:
     # validate installed
     installed = get_installed()
     if slug not in installed:
-        out(f"{RED_WARNING} [yellow]{slug}[/yellow] is not installed!", highlight=False)
+        out(f"{RED_WARNING} {st_emp(slug)} is not installed!", highlight=False)
         raise typer.Exit(code=-1)
 
     command = ["mise", "link", f"java@{slug}", link_path(installed[slug]["location"])]
     result = subprocess.run(command, capture_output=True, text=True)
     if result.stderr:
-        out(f"{RED_WARNING} [cyan]{result.stderr}[/cyan]", highlight=False)
+        out(f"{RED_WARNING} {st_nor(result.stderr)}", highlight=False)
         raise typer.Exit(code=-1)
 
     return mise_ls()

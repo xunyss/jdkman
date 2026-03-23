@@ -6,9 +6,13 @@ import typer
 from .cli_dev import app as dev_app
 from .cli_tools import app as tools_app
 from .config import APP_VERSION, is_dev, FORCE_VERBOSE, init_dirs
-from .console import update_state, log, out, table, GREEN_CHECK, ARGUMENT_SLUG, RED_WARNING
+from .console import (
+    update_state, log, out, table,
+    GREEN_CHECK, ORANGE_WARNING, RED_WARNING, ARGUMENT_SLUG,
+    st_emp, st_div, st_nor
+)
 from .installer import install_jvm, uninstall_jvm, upgrade_jvm
-from .registry import list_vendors, get_slugs, get_outdated, cleanup_cache, get_installed
+from .registry import list_vendors, get_slugs, get_outdated, cleanup_cache, get_installed, list_editions
 
 
 app = typer.Typer(
@@ -47,10 +51,16 @@ def ls():
     """
     log(f"ls()")
 
+    _outdated = get_outdated().keys()
     # get_installed()
-    tab = table("distro", "version", "location")
+    tab = table("distro", "version", "status", "location")
     for slug, managed_info in get_installed(sort=True).items():
-        tab.add_row(slug, managed_info["version"], managed_info["location"])
+        tab.add_row(
+            slug,
+            st_nor(managed_info["version"]),
+            slug not in _outdated and f"{GREEN_CHECK} {st_nor("latest")}" or f"{ORANGE_WARNING} {st_nor("outdated")}",
+            st_nor(managed_info["location"])
+        )
     out(tab if tab.row_count > 0
         else f"{GREEN_CHECK} No installed JVM distributions.")
 
@@ -67,12 +77,29 @@ def vendors():
     """
     log(f"vendors()")
 
-    # todo: mise ls-remote java | grep -o '^[a-zA-Z0-9-]*-[a-zA-Z0-9]*' | sed 's/-[0-9].*//' | sort -u | grep -v '^$'
-
     # list_vendors()
     tab = table("vendor")
     for vendor in list_vendors():
         tab.add_row(vendor)
+    out(tab)
+
+
+@app.command(name="edition", hidden=True)
+@app.command()
+def editions():
+    """
+    List all available JVM editions.  \\[aliases: edition]
+
+    Examples:
+    -  jdk editions
+    -  jdk edition
+    """
+    log(f"editions()")
+
+    # list_editions()
+    tab = table("edition")
+    for p in list_editions():
+        tab.add_row(p)
     out(tab)
 
 
@@ -121,12 +148,15 @@ def remote(
         include_jre = True
         include_feature = True
 
-    installed = get_installed()
+    _installed = get_installed().keys()
     # get_slugs()
     tab = table("distro", "installed")
     for slug in get_slugs(include_jre, include_feature, major_version):
         if not distro or slug.startswith(distro):
-            tab.add_row(slug, slug in installed and GREEN_CHECK or None)
+            tab.add_row(
+                slug,
+                slug in _installed and f"{GREEN_CHECK} {st_nor("installed")}" or None
+            )
     out(tab)
 
 
@@ -144,7 +174,11 @@ def outdated():
     # get_outdated()
     tab = table("distro", "installed", "latest")
     for slug, outdated_info in get_outdated().items():
-        tab.add_row(slug, outdated_info["installed"], outdated_info["latest"])
+        tab.add_row(
+            slug,
+            st_nor(outdated_info["installed"]),
+            st_nor(outdated_info["latest"])
+        )
     out(tab if tab.row_count > 0
         else f"{GREEN_CHECK} No outdated JVM distributions.")
 
@@ -164,7 +198,7 @@ def install(distro: ARGUMENT_SLUG):
     log(f"  distro: {distro}")
 
     installed_dir = install_jvm(distro)
-    out(f"{GREEN_CHECK} Installed: [yellow]{distro}[/yellow] [grey70]{installed_dir}[/grey70]", highlight=False)
+    out(f"{GREEN_CHECK} Installed: {st_emp(distro)} {st_nor(installed_dir)}", highlight=False)
 
 
 @app.command(name="remove", hidden=True, no_args_is_help=True)
@@ -182,7 +216,7 @@ def uninstall(distro: ARGUMENT_SLUG):
     log(f"  distro: {distro}")
 
     uninstalled_dir = uninstall_jvm(distro)
-    out(f"{GREEN_CHECK} Uninstalled: [yellow]{distro}[/yellow] [grey70]{uninstalled_dir}[/grey70]", highlight=False)
+    out(f"{GREEN_CHECK} Uninstalled: {st_emp(distro)} {st_nor(uninstalled_dir)}", highlight=False)
 
 
 @app.command(name="update", hidden=True, no_args_is_help=True)
@@ -199,7 +233,7 @@ def upgrade(distro: ARGUMENT_SLUG):
     log(f"  distro: {distro}")
 
     upgraded_dir = upgrade_jvm(distro)
-    out(f"{GREEN_CHECK} Upgraded: [yellow]{distro}[/yellow] [grey70]{upgraded_dir}[/grey70]", highlight=False)
+    out(f"{GREEN_CHECK} Upgraded: {st_emp(distro)} {st_nor(upgraded_dir)}", highlight=False)
 
 
 @app.command(name="clean", hidden=True)
@@ -230,7 +264,7 @@ def show_version(
     log(f"version()")
     log(f"  callback: {callback}")
 
-    out(f"[bold]jdkman[/bold] [yellow]{APP_VERSION}[/yellow]")
+    out(f"[bold]jdkman[/bold] {st_div(APP_VERSION)}")
     raise typer.Exit()
 
 
@@ -253,7 +287,7 @@ def show_help(
         ctx = context.parent
         cmd = cast(click.Group, ctx.command).commands.get(command)
         if cmd is None:
-            out(f"{RED_WARNING} Unknown command: [cyan]{command}[/cyan]")
+            out(f"{RED_WARNING} Unknown command: {st_div(command)}")
             raise typer.Exit(code=1)
         with click.Context(cmd, info_name=command, parent=ctx) as sub_ctx:
             cmd.get_help(sub_ctx)

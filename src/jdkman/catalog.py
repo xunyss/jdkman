@@ -4,7 +4,7 @@ from typing import Any
 import requests
 
 from .config import JVM_API_URL, cached_catalog, cache_catalog
-from .console import out, log, BLUE_ARROW, GREEN_CHECK
+from .console import out, log, BLUE_ARROW
 from .utils import version_key
 
 

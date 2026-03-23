@@ -4,7 +4,7 @@ import typer
 
 from .catalog import fetch_artifacts
 from .config import CACHE_DIR
-from .console import ARGUMENT_SLUG
+from .console import ARGUMENT_SLUG, st_emp, st_nor
 from .console import out, log, GREEN_CHECK
 from .detect import scan_unmanaged
 from .installer import download_jvm
@@ -63,7 +63,7 @@ def download(distro: ARGUMENT_SLUG):
     log(f"  distro: {distro}")
 
     dist_file = download_jvm(get_dist(distro))
-    out(f"{GREEN_CHECK} Downloaded: [yellow]{distro}[/yellow] [grey70]{dist_file.name}[/grey70]", highlight=False)
+    out(f"{GREEN_CHECK} Downloaded: {st_emp(distro)} {st_nor(dist_file.name)}", highlight=False)
 
 
 @app.command()

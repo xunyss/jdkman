@@ -44,6 +44,7 @@ class HelpFormatter:
             def _show_help(ctx: click.Context, param: click.Parameter, value: bool) -> None:
                 if value and not ctx.resilient_parsing:
                     cmd = ctx.command
+                    # noinspection PyUnresolvedReferences
                     if hasattr(cmd, "rich_markup_mode") and cmd.rich_markup_mode is not None:
                         _ru.rich_format_help(obj=cmd, ctx=ctx, markup_mode=cmd.rich_markup_mode)
                     else:

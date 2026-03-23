@@ -3,7 +3,7 @@ from typing import Annotated
 import typer
 
 from .config import is_macos
-from .console import out, log, ARGUMENT_SLUG, table, GREEN_CHECK
+from .console import out, log, table, GREEN_CHECK, st_nor
 from .detect import exec_java_home
 from .mise import mise_link, mise_ls
 
@@ -58,7 +58,9 @@ def mise(
     for mise_tool in mise_tools:
         is_link = True if mise_tool.get("symlinked_to") else False
         tab.add_row(
-            "java", mise_tool["version"], is_link and GREEN_CHECK or None,
+            st_nor("java"),
+            mise_tool["version"],
+            is_link and GREEN_CHECK or None,
             mise_tool["installed"] and GREEN_CHECK or None,
             mise_tool["active"] and GREEN_CHECK or None
         )

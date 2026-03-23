@@ -57,7 +57,17 @@ def log(*objs: Any, **kwargs: Any):
 
 BLUE_ARROW = "[blue]==>[/blue]"
 GREEN_CHECK = "[green]:heavy_check_mark:[/green]"
+ORANGE_WARNING = "[orange3]:warning:[/orange3]"
 RED_WARNING = "[red]:exclamation_question_mark:[/red]"
+
+def st_emp(txt: str) -> str:
+    return f"[yellow]{txt}[/yellow]"
+
+def st_div(txt: str) -> str:
+    return f"[cyan]{txt}[/cyan]"
+
+def st_nor(txt: str) -> str:
+    return f"[grey70]{txt}[/grey70]"
 
 
 ARGUMENT_SLUG = Annotated[str, typer.Argument(
