@@ -132,7 +132,19 @@ class Jdkman < Formula
       end
     end
     bin.install_symlink libexec/"bin/jdk"
-    (zsh_completion/"_jdk").write Utils.safe_popen_read({{"_JDK_COMPLETE" => "source_zsh"}}, bin/"jdk")
+    (zsh_completion/"_jdk").write <<~'ZSH'
+      #compdef jdk
+
+      _jdk_completion() {{
+        eval $(env _TYPER_COMPLETE_ARGS="${{words[1,$CURRENT]}}" _JDK_COMPLETE=complete_zsh jdk)
+      }}
+
+      if [ "$funcstack[1]" = "_jdk" ]; then
+          _jdk_completion "$@"
+      else
+          compdef _jdk_completion jdk
+      fi
+    ZSH
     (bash_completion/"jdk").write Utils.safe_popen_read({{"_JDK_COMPLETE" => "source_bash"}}, bin/"jdk")
     (fish_completion/"jdk.fish").write Utils.safe_popen_read({{"_JDK_COMPLETE" => "source_fish"}}, bin/"jdk")
   end
