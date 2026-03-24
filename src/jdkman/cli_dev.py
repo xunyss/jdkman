@@ -1,10 +1,12 @@
 from collections import defaultdict
+from typing import Annotated
 
 import typer
 
+from .autocomplete import autocomplete_slugs
 from .catalog import fetch_artifacts
 from .config import CACHE_DIR
-from .console import ARGUMENT_SLUG, st_emp, st_nor
+from .console import st_emp, st_nor
 from .console import out, log, GREEN_CHECK
 from .detect import scan_unmanaged
 from .installer import download_jvm
@@ -55,7 +57,13 @@ def diff():
 
 
 @app.command()
-def download(distro: ARGUMENT_SLUG):
+def download(
+        distro: Annotated[str, typer.Argument(
+            metavar="<DISTRO>",
+            help="JVM distribution name to download. (e.g. zulu-21, temurin-17)",
+            autocompletion=autocomplete_slugs
+        )]
+):
     """
     download_jvm(get_dist(distro))
     """
@@ -67,7 +75,13 @@ def download(distro: ARGUMENT_SLUG):
 
 
 @app.command()
-def slug(distro: ARGUMENT_SLUG):
+def slug(
+        distro: Annotated[str, typer.Argument(
+            metavar="<DISTRO>",
+            help="JVM distribution name to get detail information. (e.g. zulu-21, temurin-17)",
+            autocompletion=autocomplete_slugs
+        )]
+):
     """
     get_slug(distro)
     """

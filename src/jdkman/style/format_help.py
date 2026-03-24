@@ -27,6 +27,7 @@ class HelpFormatter:
     """
     section_header_style: str = "bold yellow"
     section_order: list[Section] = field(default_factory=lambda: list(_DEFAULT_ORDER))
+    hidden_options: set[str] = field(default_factory=set)
 
     def apply(self) -> None:
         """Patch typer globally with this style."""
@@ -96,6 +97,8 @@ class HelpFormatter:
             panel_to_options: defaultdict[str, list[click.Option]] = defaultdict(list)
             for param in obj.get_params(ctx):
                 if getattr(param, "hidden", False):
+                    continue
+                if isinstance(param, click.Option) and style.hidden_options.intersection(param.opts):
                     continue
                 pname = getattr(param, _ru._RICH_HELP_PANEL_NAME, None)
                 if isinstance(param, click.Argument):

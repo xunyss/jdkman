@@ -93,7 +93,7 @@ def list_editions() -> list[str]:
     log(f"list_editions()")
 
     # mise ls-remote java | grep -o '^[a-zA-Z0-9-]*-[a-zA-Z0-9]*' | sed 's/-[0-9].*//' | sort -u | grep -v '^$'
-    return list(dict.fromkeys(re.sub(r'-\d+$', '', s) for s in fetch_slugs(sort=True).keys()))
+    return list(dict.fromkeys(re.sub(r'-\d+$', '', slug) for slug in fetch_slugs(sort=True).keys()))
 
 
 def get_slugs(include_jre: bool, include_feature: bool, major_version: str | None) -> dict[str, dict[str, Any]]:

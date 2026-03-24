@@ -3,12 +3,13 @@ from typing import Annotated, cast
 import click
 import typer
 
+from .autocomplete import autocomplete_installed, autocomplete_slugs
 from .cli_dev import app as dev_app
 from .cli_tools import app as tools_app
 from .config import APP_VERSION, is_dev, FORCE_VERBOSE, init_dirs
 from .console import (
     update_state, log, out, table,
-    GREEN_CHECK, ORANGE_WARNING, RED_WARNING, ARGUMENT_SLUG,
+    GREEN_CHECK, ORANGE_WARNING, RED_WARNING,
     st_emp, st_div, st_nor
 )
 from .installer import install_jvm, uninstall_jvm, upgrade_jvm
@@ -16,9 +17,8 @@ from .registry import list_vendors, get_slugs, get_outdated, cleanup_cache, get_
 
 
 app = typer.Typer(
-    add_completion=False,
-    suggest_commands=True,
-    rich_markup_mode="rich",
+    add_completion=True,
+    pretty_exceptions_enable=is_dev()
 )
 app.add_typer(
     tools_app
@@ -186,7 +186,13 @@ def outdated():
 @app.command(name="setup", hidden=True, no_args_is_help=True)
 @app.command(name="add", hidden=True, no_args_is_help=True)
 @app.command(no_args_is_help=True)
-def install(distro: ARGUMENT_SLUG):
+def install(
+        distro: Annotated[str, typer.Argument(
+            metavar="<DISTRO>",
+            help="JVM distribution name to install. (e.g. zulu-21, temurin-17)",
+            autocompletion=autocomplete_slugs
+        )]
+):
     """
     Install a JVM distribution.  \\[aliases: setup, add]
 
@@ -204,7 +210,13 @@ def install(distro: ARGUMENT_SLUG):
 @app.command(name="remove", hidden=True, no_args_is_help=True)
 @app.command(name="rm", hidden=True, no_args_is_help=True)
 @app.command(no_args_is_help=True)
-def uninstall(distro: ARGUMENT_SLUG):
+def uninstall(
+        distro: Annotated[str, typer.Argument(
+            metavar="<DISTRO>",
+            help="JVM distribution name to uninstall. (e.g. zulu-21, temurin-17)",
+            autocompletion=autocomplete_installed
+        )]
+):
     """
     Remove an installed JVM distribution.  \\[aliases: remove, rm]
 
@@ -221,7 +233,13 @@ def uninstall(distro: ARGUMENT_SLUG):
 
 @app.command(name="update", hidden=True, no_args_is_help=True)
 @app.command(no_args_is_help=True)
-def upgrade(distro: ARGUMENT_SLUG):
+def upgrade(
+        distro: Annotated[str, typer.Argument(
+            metavar="<DISTRO>",
+            help="JVM distribution name to upgrade. (e.g. zulu-21, temurin-17)",
+            autocompletion=autocomplete_installed
+        )]
+):
     """
     Upgrade an installed JVM distribution.  \\[aliases: update]
 

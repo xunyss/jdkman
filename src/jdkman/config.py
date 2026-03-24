@@ -65,6 +65,7 @@ INSTALL_DIR = Path.home() / "Library" / "Java" / "JavaVirtualMachines" if is_mac
 MANAGED_JVM_DB = INSTALL_DIR / f".{APP_NAME}"
 
 CUSTOM_STYLE_HELP = True
+CUSTOM_STYLE_ERROR = True
 CUSTOM_STYLE_TABLE = True
 
 # debugging

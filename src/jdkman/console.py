@@ -1,12 +1,13 @@
-from typing import Any, Annotated
+import os
+from typing import Any
 
 import rich.box
-import typer
 from rich.console import Console
 from rich.table import Table
 from rich.text import Text
 
-from .config import CUSTOM_STYLE_HELP, CUSTOM_STYLE_TABLE
+from .config import CUSTOM_STYLE_HELP, CUSTOM_STYLE_ERROR, CUSTOM_STYLE_TABLE
+from .style.format_error import ErrorFormatter
 from .style.format_help import HelpFormatter
 
 
@@ -27,6 +28,12 @@ if CUSTOM_STYLE_HELP:
     HelpFormatter(
         section_header_style="bold yellow",
         section_order=["commands", "arguments", "options"],
+        hidden_options={"--install-completion", "--show-completion"},
+    ).apply()
+
+if CUSTOM_STYLE_ERROR:
+    ErrorFormatter(
+        header_style="bold red",
     ).apply()
 
 
@@ -45,7 +52,7 @@ def out(*objs: Any, **kwargs: Any):
 
 
 def log(*objs: Any, **kwargs: Any):
-    if not _state["verbose"]:
+    if not _state["verbose"] or "_JDK_COMPLETE" in os.environ:
         return
     prefix = Text.from_markup("[italic bright_black]verbose[/italic bright_black] ")
     with _log_console.capture() as capture:
@@ -60,18 +67,13 @@ GREEN_CHECK = "[green]:heavy_check_mark:[/green]"
 ORANGE_WARNING = "[orange3]:warning:[/orange3]"
 RED_WARNING = "[red]:exclamation_question_mark:[/red]"
 
-def st_emp(txt: str) -> str:
-    return f"[yellow]{txt}[/yellow]"
 
-def st_div(txt: str) -> str:
-    return f"[cyan]{txt}[/cyan]"
+def st_emp(content: Any) -> str:
+    return f"[yellow]{content}[/yellow]"
 
-def st_nor(txt: str) -> str:
-    return f"[grey70]{txt}[/grey70]"
+def st_div(content: Any) -> str:
+    return f"[cyan]{content}[/cyan]"
 
-
-ARGUMENT_SLUG = Annotated[str, typer.Argument(
-    metavar="<DISTRO>",
-    help="JVM distribution name. (e.g. zulu-21, temurin-17)"
-)]
+def st_nor(content: Any) -> str:
+    return f"[grey70]{content}[/grey70]"
 

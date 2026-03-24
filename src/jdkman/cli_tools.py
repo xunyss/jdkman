@@ -2,6 +2,7 @@ from typing import Annotated
 
 import typer
 
+from .autocomplete import autocomplete_installed
 from .config import is_macos
 from .console import out, log, table, GREEN_CHECK, st_nor
 from .detect import exec_java_home
@@ -40,7 +41,8 @@ if is_macos():
 @app.command(rich_help_panel="Tools")
 def mise(
         distro: Annotated[str, typer.Argument(
-            help="JVM distribution name to register as a mise symlink. (omit to list)"
+            help="JVM distribution name to register as a mise symlink. (omit to list)",
+            autocompletion=autocomplete_installed
         )] = None
 ):
     """
