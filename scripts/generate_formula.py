@@ -132,9 +132,9 @@ class Jdkman < Formula
       end
     end
     bin.install_symlink libexec/"bin/jdk"
-    (zsh_completion/"_jdk").write shell_output({{"_JDK_COMPLETE" => "source_zsh"}}, bin/"jdk")
-    (bash_completion/"jdk").write shell_output({{"_JDK_COMPLETE" => "source_bash"}}, bin/"jdk")
-    (fish_completion/"jdk.fish").write shell_output({{"_JDK_COMPLETE" => "source_fish"}}, bin/"jdk")
+    with_env("_JDK_COMPLETE" => "source_zsh") {{ (zsh_completion/"_jdk").write shell_output(bin/"jdk") }}
+    with_env("_JDK_COMPLETE" => "source_bash") {{ (bash_completion/"jdk").write shell_output(bin/"jdk") }}
+    with_env("_JDK_COMPLETE" => "source_fish") {{ (fish_completion/"jdk.fish").write shell_output(bin/"jdk") }}
   end
 
   test do
