@@ -140,6 +140,7 @@ class Jdkman < Formula
   license "MIT"
 
   # depends_on "python@3.14"
+  depends_on "python@3"
 
 {resources_str}
 
