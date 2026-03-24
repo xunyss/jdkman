@@ -1,10 +1,10 @@
 [project]
 name = "jdkman"
-version = "0.2.8"
+version = "0.2.9"
 description = "A command-line tool for installing and managing OpenJDK distributions."
 authors = [{name = "junghun.song", email = "xunyss@gmail.com"}]
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.10"
 dependencies = [
     "requests>=2.32.5",
     "typer-slim>=0.24.0",
@@ -21,7 +21,7 @@ testpaths = ["tests"]
 pythonpath = ["src"]
 
 [build-system]
-requires = ["uv_build >= 0.8.14, <0.11.0"]
+requires = ["uv_build >= 0.8.14, <0.20.0"]
 build-backend = "uv_build"
 
 [dependency-groups]

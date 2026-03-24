@@ -4,7 +4,7 @@ import typer
 
 from .autocomplete import autocomplete_installed
 from .config import is_macos
-from .console import out, log, table, GREEN_CHECK, st_nor
+from .console import out, log, table, GREEN_CHECK, st_emp, st_nor
 from .detect import exec_java_home
 from .mise import mise_link, mise_ls
 
@@ -56,15 +56,17 @@ def mise(
     log(f"  distro: {distro}")
 
     mise_tools = mise_link(distro) if distro else mise_ls()
-    tab = table("mise_tool", "version", "symlink", "installed", "active")
+    tab = table("mise_tool", "version", "symlink", "installed", "active", "requested")
     for mise_tool in mise_tools:
         is_link = True if mise_tool.get("symlinked_to") else False
+        is_active = mise_tool.get("active")
         tab.add_row(
             st_nor("java"),
-            mise_tool["version"],
+            st_emp(mise_tool["version"]) if is_active else mise_tool["version"],
             is_link and GREEN_CHECK or None,
             mise_tool["installed"] and GREEN_CHECK or None,
-            mise_tool["active"] and GREEN_CHECK or None
+            is_active and GREEN_CHECK or None,
+            st_nor(mise_tool["requested_version"]) if is_active else None
         )
     out(tab if tab.row_count > 0
         else f"{GREEN_CHECK} No mise java tools found.")

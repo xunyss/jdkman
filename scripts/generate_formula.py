@@ -139,12 +139,12 @@ class Jdkman < Formula
   sha256 "{sdist_sha256}"
   license "MIT"
 
-  depends_on "python@3.14"
+  # depends_on "python@3.14"
 
 {resources_str}
 
   def install
-    venv = virtualenv_create(libexec, "python3.14")
+    venv = virtualenv_create(libexec, "python3")
     resources.each do |r|
       r.stage do
         whl = Pathname.pwd.glob("*.whl").first

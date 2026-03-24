@@ -40,7 +40,7 @@ def mise_link(slug: str) -> list[dict[str, Any]]:
 
     # check mise installed
     if not is_mise_enabled():
-        out(f"{RED_WARNING} {st_div("mise")} is not installed!", highlight=False)
+        out(f"{RED_WARNING} {st_div('mise')} is not installed!", highlight=False)
         raise typer.Exit(code=-1)
 
     # validate slug

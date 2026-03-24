@@ -93,7 +93,7 @@ def make_jvm_dir_name(slug_info: dict[str, Any]):
     if feature:
         parts.append(feature)
     parts.append(str(slug_info["major_version"]))
-    return f"{"-".join(parts)}.{slug_info["image_type"]}"
+    return f"{'-'.join(parts)}.{slug_info['image_type']}"
 
 
 def move_jvm_dir(slug: str, work_dir: Path) -> Path:
@@ -126,7 +126,7 @@ def install_jvm(slug: str) -> Path:
     dist_file = download_jvm(dist_info)
 
     # extract to work_dir
-    work_dir = dist_file.parent / f"{slug}_{dist_info["version"]}"
+    work_dir = dist_file.parent / f"{slug}_{dist_info['version']}"
     work_dir.mkdir(parents=True, exist_ok=True)
     extract_archive(dist_file, work_dir)
 

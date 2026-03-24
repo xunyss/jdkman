@@ -70,7 +70,7 @@ def ls():
         tab.add_row(
             slug,
             st_nor(managed_info["version"]),
-            slug not in _outdated and f"{GREEN_CHECK} {st_nor("latest")}" or f"{ORANGE_WARNING} {st_nor("outdated")}",
+            slug not in _outdated and f"{GREEN_CHECK} {st_nor('latest')}" or f"{ORANGE_WARNING} {st_nor('outdated')}",
             st_nor(managed_info["location"])
         )
     out(tab if tab.row_count > 0
@@ -167,7 +167,7 @@ def remote(
         if not distro or slug.startswith(distro):
             tab.add_row(
                 slug,
-                slug in _installed and f"{GREEN_CHECK} {st_nor("installed")}" or None
+                slug in _installed and f"{GREEN_CHECK} {st_nor('installed')}" or None
             )
     out(tab)
 
