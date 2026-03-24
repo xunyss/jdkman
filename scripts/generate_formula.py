@@ -82,7 +82,7 @@ def zsh_completion_ruby(indent="    "):
         'fi',
     ])
     lines = [
-        'zsh_script = Utils.safe_popen_read({"_JDK_COMPLETE" => "source_zsh"}, bin/"jdk")',
+        'zsh_script = Utils.safe_popen_read({"_JDK_COMPLETE" => "source_zsh"}, bin/"jdk").lstrip',
         f"zsh_script = zsh_script.sub(\"{compdef_line}\", <<~'ZSH'.chomp)",
         *[f'  {line}' for line in funcstack_block.splitlines()],
         'ZSH',
