@@ -9,3 +9,13 @@ def autocomplete_installed(incomplete: str):
 def autocomplete_slugs(incomplete: str):
     return list(fetch_slugs(sort=True).keys())
 
+
+def autocomplete_commands(ctx, incomplete: str):
+    if ctx.parent:
+        group = ctx.parent.command
+        return [
+            name for name, cmd in group.commands.items()
+            if not cmd.hidden and name.startswith(incomplete)
+        ]
+    return []
+

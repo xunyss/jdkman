@@ -25,6 +25,13 @@ def fetch_pypi(package, version):
         return json.load(resp)
 
 
+def find_sdist(data):
+    for entry in data["urls"]:
+        if entry["packagetype"] == "sdist":
+            return entry["url"], entry["digests"]["sha256"]
+    return None, None
+
+
 def find_whl(data, py3_none_any_only=False):
     """Find wheel URL and sha256. Prefer py3-none-any."""
     for entry in data["urls"]:
@@ -36,13 +43,6 @@ def find_whl(data, py3_none_any_only=False):
         if entry["packagetype"] == "sdist":
             return entry["url"], entry["digests"]["sha256"], "sdist"
     return None, None, None
-
-
-def find_sdist(data):
-    for entry in data["urls"]:
-        if entry["packagetype"] == "sdist":
-            return entry["url"], entry["digests"]["sha256"]
-    return None, None
 
 
 def parse_requirements(lines):
@@ -70,6 +70,26 @@ def resource_block(rb_name, url, sha256, kind):
     lines.append(f'    sha256 "{sha256}"')
     lines.append(f'  end')
     return "\n".join(lines)
+
+
+def zsh_completion_ruby(indent="    "):
+    compdef_line = 'compdef _jdk_completion jdk'
+    funcstack_block = "\n".join([
+        'if [ "$funcstack[1]" = "_jdk" ]; then',
+        '    _jdk_completion "$@"',
+        'else',
+        f'    {compdef_line}',
+        'fi',
+    ])
+    lines = [
+        'zsh_script = Utils.safe_popen_read({"_JDK_COMPLETE" => "source_zsh"}, bin/"jdk")',
+        f"zsh_script = zsh_script.sub(\"{compdef_line}\", <<~'ZSH'.chomp)",
+        *[f'  {line}' for line in funcstack_block.splitlines()],
+        'ZSH',
+        '(zsh_completion/"_jdk").write zsh_script',
+    ]
+    return "\n".join(f"{indent}{line}" for line in lines)
+
 
 
 def main():
@@ -132,19 +152,7 @@ class Jdkman < Formula
       end
     end
     bin.install_symlink libexec/"bin/jdk"
-    (zsh_completion/"_jdk").write <<~'ZSH'
-      #compdef jdk
-
-      _jdk_completion() {{
-        eval $(env _TYPER_COMPLETE_ARGS="${{words[1,$CURRENT]}}" _JDK_COMPLETE=complete_zsh jdk)
-      }}
-
-      if [ "$funcstack[1]" = "_jdk" ]; then
-          _jdk_completion "$@"
-      else
-          compdef _jdk_completion jdk
-      fi
-    ZSH
+{zsh_completion_ruby()}
     (bash_completion/"jdk").write Utils.safe_popen_read({{"_JDK_COMPLETE" => "source_bash"}}, bin/"jdk")
     (fish_completion/"jdk.fish").write Utils.safe_popen_read({{"_JDK_COMPLETE" => "source_fish"}}, bin/"jdk")
   end

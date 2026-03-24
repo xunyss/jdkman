@@ -1,9 +1,10 @@
+import sys
 from typing import Annotated, cast
 
 import click
 import typer
 
-from .autocomplete import autocomplete_installed, autocomplete_slugs
+from .autocomplete import autocomplete_installed, autocomplete_slugs, autocomplete_commands
 from .cli_dev import app as dev_app
 from .cli_tools import app as tools_app
 from .config import APP_VERSION, is_dev, FORCE_VERBOSE, init_dirs
@@ -30,6 +31,17 @@ if is_dev():
         help="for Development..",
         rich_help_panel="Tools"
     )
+
+
+def intercept_args(value: bool):
+    if is_dev():
+        completion_opts = {"--install-completion"}
+    else:
+        completion_opts = {"--install-completion", "--show-completion"}
+
+    for arg in sys.argv:
+        if arg in completion_opts:
+            raise click.NoSuchOption(arg)
 
 
 def callback_verbose(value: bool):
@@ -290,7 +302,8 @@ def show_version(
 def show_help(
         context: typer.Context,
         command: Annotated[str | None, typer.Argument(
-            help="Command to show help for."
+            help="Command to show help for.",
+            autocompletion=autocomplete_commands
         )] = None
 ):
     """
@@ -320,6 +333,10 @@ def show_help(
 )
 def main(
         context: typer.Context,
+        _interceptor: Annotated[bool, typer.Option(
+            hidden=True, expose_value=False,
+            callback=intercept_args, is_eager=True,
+        )] = False,
         _verbose: Annotated[bool, typer.Option(
             "--verbose", "-V",
             help="Show verbose output.",
