@@ -19,6 +19,7 @@ from .registry import list_vendors, get_slugs, get_outdated, cleanup_cache, get_
 
 app = typer.Typer(
     add_completion=True,
+    suggest_commands=False,
     pretty_exceptions_enable=is_dev()
 )
 app.add_typer(

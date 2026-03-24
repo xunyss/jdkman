@@ -64,6 +64,8 @@ CATALOG_CACHE_TTL = 60 * 60 * 6  # 6 hours (sec)
 INSTALL_DIR = Path.home() / "Library" / "Java" / "JavaVirtualMachines" if is_macos() else Path.home() / ".jdk"
 MANAGED_JVM_DB = INSTALL_DIR / f".{APP_NAME}"
 
+# custom typer
+DISABLE_SUGGEST_OPTIONS = True
 CUSTOM_STYLE_HELP = True
 CUSTOM_STYLE_ERROR = True
 CUSTOM_STYLE_TABLE = True

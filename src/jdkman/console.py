@@ -6,9 +6,10 @@ from rich.console import Console
 from rich.table import Table
 from rich.text import Text
 
-from .config import CUSTOM_STYLE_HELP, CUSTOM_STYLE_ERROR, CUSTOM_STYLE_TABLE
+from .config import DISABLE_SUGGEST_OPTIONS, CUSTOM_STYLE_HELP, CUSTOM_STYLE_ERROR, CUSTOM_STYLE_TABLE
 from .style.format_error import ErrorFormatter
 from .style.format_help import HelpFormatter
+from .style.option_parser import OptionParserPatch
 
 
 _state = {
@@ -22,6 +23,10 @@ _table_style = {
 
 _console = Console()
 _log_console = Console(force_terminal=True)
+
+
+if DISABLE_SUGGEST_OPTIONS:  # like "suggest_commands=False"
+    OptionParserPatch().apply()
 
 
 if CUSTOM_STYLE_HELP:
