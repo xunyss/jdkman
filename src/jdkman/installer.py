@@ -3,13 +3,12 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
-import requests
 import typer
 from rich.pretty import pretty_repr
 from rich.progress import Progress, BarColumn, DownloadColumn, TransferSpeedColumn, TimeRemainingColumn
 
 from .config import CACHE_DIR, INSTALL_DIR, CLEAN_WORK_DIR, is_macos, is_windows, is_linux
-from .console import log, out, BLUE_ARROW, RED_WARNING, GREEN_CHECK, st_emp, st_div, st_nor
+from .console import log, out, MARK_ARROW, MARK_INVALID, MARK_CHECK, st_emp, st_div, st_dim
 from .registry import managed_add, get_installed, managed_del, get_outdated, get_dist, get_slug
 from .utils import extract_archive, sha256_file
 
@@ -24,8 +23,8 @@ def verify_checksum(dist_file: Path, dist_checksum: str) -> Path:
     log(f"  actual:   {actual}")
 
     if actual != expected:
-        out(f"{RED_WARNING} Checksum mismatch!")
-        raise typer.Exit(code=1)
+        out(f"{MARK_INVALID} Checksum mismatch!")
+        raise typer.Exit(code=-1)
     else:
         out(f"Checksum verified.")
 
@@ -42,13 +41,15 @@ def download_jvm(dist_info: dict[str, Any]) -> Path:
     if dist_file.exists():
         out(f"Already downloaded: {st_div(dist_file.name)}", highlight=False)
     else:
-        out(f"{BLUE_ARROW} Downloading JVM distribution...", highlight=False)
+        out(f"{MARK_ARROW} Downloading JVM distribution...", highlight=False)
+
+        import requests  # lazy import
         with requests.get(dist_info["url"], stream=True, timeout=60) as request:
             request.raise_for_status()
             total = int(request.headers.get("content-length", 0))
             with open(dist_file, "wb") as file:
                 with Progress(
-                    f"Downloading... {st_nor(filename)}",
+                    f"Downloading... {st_dim(filename)}",
                     BarColumn(bar_width=None), DownloadColumn(), TransferSpeedColumn(), TimeRemainingColumn(),
                 ) as progress:
                     task = progress.add_task("", total=total)
@@ -118,7 +119,7 @@ def install_jvm(slug: str) -> Path:
 
     # validate installed
     if slug in get_installed():
-        out(f"{RED_WARNING} {st_emp(slug)} is already installed!", highlight=False)
+        out(f"{MARK_INVALID} {st_emp(slug)} is already installed!", highlight=False)
         raise typer.Exit(code=-1)
 
     # download_jvm
@@ -155,7 +156,7 @@ def uninstall_jvm(slug: str) -> Path:
     # validate installed
     installed = get_installed()
     if slug not in installed:
-        out(f"{RED_WARNING} {st_emp(slug)} is not installed!", highlight=False)
+        out(f"{MARK_INVALID} {st_emp(slug)} is not installed!", highlight=False)
         raise typer.Exit(code=-1)
 
     # delete jvm location
@@ -178,12 +179,12 @@ def upgrade_jvm(slug: str) -> Path:
 
     # validate installed
     if slug not in get_installed():
-        out(f"{RED_WARNING} {st_emp(slug)} is not installed!", highlight=False)
+        out(f"{MARK_INVALID} {st_emp(slug)} is not installed!", highlight=False)
         raise typer.Exit(code=-1)
 
     # validate outdated
     if slug not in get_outdated():
-        out(f"{GREEN_CHECK} {st_emp(slug)} is already up-to-date.", highlight=False)
+        out(f"{MARK_CHECK} {st_emp(slug)} is already up-to-date.", highlight=False)
         raise typer.Exit()
 
     uninstall_jvm(slug)

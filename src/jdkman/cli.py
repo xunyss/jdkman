@@ -6,12 +6,13 @@ import typer
 
 from .autocomplete import autocomplete_installed, autocomplete_slugs, autocomplete_commands
 from .cli_dev import app as dev_app
+from .cli_env import app as env_app
 from .cli_tools import app as tools_app
-from .config import APP_VERSION, is_dev, FORCE_VERBOSE, init_dirs
+from .config import is_dev, FORCE_VERBOSE, init_dirs
 from .console import (
     update_state, log, out, table,
-    GREEN_CHECK, ORANGE_WARNING, RED_WARNING,
-    st_emp, st_div, st_nor
+    MARK_CHECK, MARK_WARNING, MARK_INVALID,
+    st_emp, st_hig, st_div, st_dim, version_str
 )
 from .installer import install_jvm, uninstall_jvm, upgrade_jvm
 from .registry import list_vendors, get_slugs, get_outdated, cleanup_cache, get_installed, list_editions
@@ -21,6 +22,12 @@ app = typer.Typer(
     add_completion=True,
     suggest_commands=False,
     pretty_exceptions_enable=is_dev()
+)
+app.add_typer(
+    env_app,
+    name="env",
+    help="Manage per-directory JDK auto-switching.",
+    rich_help_panel="Tools"
 )
 app.add_typer(
     tools_app
@@ -70,12 +77,12 @@ def ls():
     for slug, managed_info in get_installed(sort=True).items():
         tab.add_row(
             slug,
-            st_nor(managed_info["version"]),
-            slug not in _outdated and f"{GREEN_CHECK} {st_nor('latest')}" or f"{ORANGE_WARNING} {st_nor('outdated')}",
-            st_nor(managed_info["location"])
+            st_dim(managed_info["version"]),
+            slug not in _outdated and f"{MARK_CHECK} {st_dim('latest')}" or f"{MARK_WARNING} {st_dim('outdated')}",
+            st_dim(managed_info["location"])
         )
     out(tab if tab.row_count > 0
-        else f"{GREEN_CHECK} No installed JVM distributions.")
+        else f"{MARK_CHECK} No installed JVM distributions.")
 
 
 @app.command(name="vendor", hidden=True)
@@ -168,7 +175,7 @@ def remote(
         if not distro or slug.startswith(distro):
             tab.add_row(
                 slug,
-                slug in _installed and f"{GREEN_CHECK} {st_nor('installed')}" or None
+                slug in _installed and f"{MARK_CHECK} {st_dim('installed')}" or None
             )
     out(tab)
 
@@ -189,11 +196,11 @@ def outdated():
     for slug, outdated_info in get_outdated().items():
         tab.add_row(
             slug,
-            st_nor(outdated_info["installed"]),
-            st_nor(outdated_info["latest"])
+            st_dim(outdated_info["installed"]),
+            st_dim(outdated_info["latest"])
         )
     out(tab if tab.row_count > 0
-        else f"{GREEN_CHECK} No outdated JVM distributions.")
+        else f"{MARK_CHECK} No outdated JVM distributions.")
 
 
 @app.command(name="setup", hidden=True, no_args_is_help=True)
@@ -217,7 +224,7 @@ def install(
     log(f"  distro: {distro}")
 
     installed_dir = install_jvm(distro)
-    out(f"{GREEN_CHECK} Installed: {st_emp(distro)} {st_nor(installed_dir)}", highlight=False)
+    out(f"{MARK_CHECK} Installed: {st_emp(distro)} {st_dim(installed_dir)}", highlight=False)
 
 
 @app.command(name="remove", hidden=True, no_args_is_help=True)
@@ -241,7 +248,7 @@ def uninstall(
     log(f"  distro: {distro}")
 
     uninstalled_dir = uninstall_jvm(distro)
-    out(f"{GREEN_CHECK} Uninstalled: {st_emp(distro)} {st_nor(uninstalled_dir)}", highlight=False)
+    out(f"{MARK_CHECK} Uninstalled: {st_emp(distro)} {st_dim(uninstalled_dir)}", highlight=False)
 
 
 @app.command(name="update", hidden=True, no_args_is_help=True)
@@ -264,7 +271,7 @@ def upgrade(
     log(f"  distro: {distro}")
 
     upgraded_dir = upgrade_jvm(distro)
-    out(f"{GREEN_CHECK} Upgraded: {st_emp(distro)} {st_nor(upgraded_dir)}", highlight=False)
+    out(f"{MARK_CHECK} Upgraded: {st_emp(distro)} {st_dim(upgraded_dir)}", highlight=False)
 
 
 @app.command(name="clean", hidden=True)
@@ -280,7 +287,7 @@ def cleanup():
     log(f"cleanup()")
 
     cleanup_cache()
-    out(f"{GREEN_CHECK} Cache cleaned.")
+    out(f"{MARK_CHECK} Cache cleaned.")
 
 
 @app.command(name="version", add_help_option=False)
@@ -295,7 +302,7 @@ def show_version(
     log(f"version()")
     log(f"  callback: {callback}")
 
-    out(f"[bold]jdkman[/bold] {st_div(APP_VERSION)}")
+    out(version_str())
     raise typer.Exit()
 
 
@@ -319,8 +326,8 @@ def show_help(
         ctx = context.parent
         cmd = cast(click.Group, ctx.command).commands.get(command)
         if cmd is None:
-            out(f"{RED_WARNING} Unknown command: {st_div(command)}")
-            raise typer.Exit(code=1)
+            out(f"{MARK_INVALID} Unknown command: {st_div(command)}")
+            raise typer.Exit(code=-1)
         with click.Context(cmd, info_name=command, parent=ctx) as sub_ctx:
             cmd.get_help(sub_ctx)
     else:
@@ -328,7 +335,7 @@ def show_help(
 
 
 @app.callback(
-    epilog="── Made by [blue]xunyss[/blue] :thumbs_up: ──",
+    epilog=f"── Made by {st_hig('xunyss')} :thumbs_up: ──",
     invoke_without_command=True,
     no_args_is_help=True,
 )

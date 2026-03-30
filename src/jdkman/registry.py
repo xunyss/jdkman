@@ -9,7 +9,7 @@ from rich.pretty import pretty_repr
 
 from .catalog import fetch_slugs
 from .config import CACHE_DIR, MANAGED_JVM_DB
-from .console import log, out, RED_WARNING, st_div
+from .console import log, out, MARK_INVALID, st_div
 from .utils import version_key
 
 
@@ -117,8 +117,8 @@ def get_slug(slug: str) -> dict[str, Any]:
 
     slugs = fetch_slugs()
     if slug not in slugs:
-        out(f"{RED_WARNING} {st_div(slug)} is invalid!", highlight=False)
-        raise typer.Exit(code=1)
+        out(f"{MARK_INVALID} {st_div(slug)} is invalid!", highlight=False)
+        raise typer.Exit(code=-1)
 
     return slugs.get(slug)
 

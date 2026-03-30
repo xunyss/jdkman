@@ -31,6 +31,10 @@ def get_jvm_api_url() -> str:
     return f"https://mise-java.jdx.dev/jvm/ga/{_os}/{_arch}.json"
 
 
+def platform_name() -> str:
+    return f"{platform.system().lower()}-{platform.machine()}"
+
+
 def is_macos():
     return platform.system() == "Darwin"
 
@@ -59,9 +63,9 @@ JVM_API_URL = get_jvm_api_url()
 
 CACHE_DIR = Path.home() / ".cache" / APP_NAME
 CATALOG_CACHE_FILE = CACHE_DIR / ".catalog"
-CATALOG_CACHE_TTL = 60 * 60 * 6  # 6 hours (sec)
+CATALOG_CACHE_TTL = 60 * 60 * 12  # 12 hours (sec)
 
-INSTALL_DIR = Path.home() / "Library" / "Java" / "JavaVirtualMachines" if is_macos() else Path.home() / ".jdk"
+INSTALL_DIR = Path.home() / "Library/Java/JavaVirtualMachines" if is_macos() else Path.home() / ".jdk"
 MANAGED_JVM_DB = INSTALL_DIR / f".{APP_NAME}"
 
 # custom typer
