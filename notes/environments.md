@@ -8,7 +8,7 @@
 ```
 ~/project-a/   (.java-version: zulu-21)    → JAVA_HOME = /path/to/zulu-21
 ~/project-b/   (.java-version: temurin-17) → JAVA_HOME = /path/to/temurin-17
-~/             (.java-version 없음)          → JAVA_HOME unset (또는 global 적용)
+~/             (.java-version 없음)          → global 설정 적용 (없으면 JAVA_HOME unset)
 ```
 
 ---
@@ -43,7 +43,11 @@ eval "$(jdk activate bash)"
 jdk() {
   case "$1" in
   deactivate)
-    eval "$(command jdk deactivate "${2:-$_JDKMAN_SHELL}")"  # eval 자동 처리
+    if [[ ! " $@ " =~ " --help " ]] && [[ ! " $@ " =~ " -h " ]]; then
+      eval "$(command jdk deactivate "${2:-$_JDKMAN_SHELL}")"  # eval 자동 처리
+    else
+      command jdk "$@"   # --help/-h 는 바이너리로 직접 전달
+    fi
     ;;
   *)
     command jdk "$@"   # 그 외는 바이너리로 위임
@@ -65,15 +69,15 @@ jdk deactivate --help   # --help/-h 있으면 eval 없이 바이너리로 직접
 
 deactivate 실행 시 제거되는 것:
 - `chpwd_functions`, `precmd_functions`(zsh) 또는 `PROMPT_COMMAND`(bash)에서 훅 제거
-- `jdk`, `_jdkman_find_slug`, `_jdkman_hook` 함수 제거
-- `JAVA_HOME`, `_JDKMAN_SHELL`, `_JDKMAN_ORIG_PATH`, `_JDKMAN_CURRENT_SLUG` unset
+- `jdk`, `_jdkman_find_env_tag`, `_jdkman_hook` 함수 제거
+- `JAVA_HOME`, `_JDKMAN_SHELL`, `_JDKMAN_ORIG_PATH`, `_JDKMAN_CURRENT_ENV_TAG` unset
 
 ### 스크립트 파일 위치
 
 ```
 src/jdkman/resources/activate_script/
 ├── zsh              # zsh 훅 스크립트
-├── zsh_dev          # zsh 개발용 (eval → echo, jdk_hook 출력 확인용)
+├── zsh_dev          # zsh 개발용 (eval → echo, jdk hook-env 출력 확인용)
 ├── zsh_deactivate   # zsh 훅 제거 스크립트
 ├── bash             # bash 훅 스크립트
 ├── bash_dev         # bash 개발용
@@ -99,19 +103,22 @@ mise의 `activate` 출력을 참고해서 설계했다.
 
 ### 최적화 전략 - Python 프로세스 최소화
 
-`jdk_hook`은 Python 프로세스를 띄우는 비용이 있다.
+`jdk hook-env`는 Python 프로세스를 띄우는 비용이 있다.
 `cd`마다 무조건 실행하면 `pyenv`, `nvm` 등 다른 버전 관리 도구와 함께 사용 시 체감 성능 저하가 발생할 수 있다.
 
-**해결책:** `.java-version` 탐색은 쉘에서 직접 처리하고, slug가 바뀌었을 때만 `jdk_hook`을 호출한다.
+**해결책:** `.java-version` 탐색은 쉘에서 직접 처리하고, env_tag가 바뀌었을 때만 `jdk hook-env`를 호출한다.
 
 ```zsh
-_jdkman_find_slug() {
+_jdkman_find_env_tag() {
   # Python 없이 쉘에서 직접 .java-version 탐색 (상위 디렉토리까지)
-  local dir="$PWD"
+  local dir="$PWD" content
   while [[ "$dir" != "/" ]]; do
     if [[ -f "$dir/.java-version" ]]; then
-      echo "$(<"$dir/.java-version")"
-      return
+      content="$(<"$dir/.java-version")"
+      if [[ -n "$content" ]]; then
+        echo "$content"
+        return
+      fi
     fi
     dir="${dir:h}"   # bash는 dir="$(dirname "$dir")"
   done
@@ -122,57 +129,71 @@ _jdkman_find_slug() {
 }
 
 _jdkman_hook() {
-  local slug
-  slug="$(_jdkman_find_slug)"
-  if [[ "$slug" == "$_JDKMAN_CURRENT_SLUG" ]]; then
-    return   # slug 변경 없으면 jdk_hook 실행 안 함
+  local env_tag
+  env_tag="$(_jdkman_find_env_tag)"
+  if [[ "$env_tag" == "$_JDKMAN_CURRENT_ENV_TAG" ]]; then
+    return   # env_tag 변경 없으면 jdk hook-env 실행 안 함
   fi
-  _JDKMAN_CURRENT_SLUG="$slug"
-  if [[ -n "$slug" ]]; then
-    eval "$(jdk_hook "$slug" 2>/dev/null)"
+  _JDKMAN_CURRENT_ENV_TAG="$env_tag"
+  if [[ -n "$env_tag" ]]; then
+    eval "$(jdk hook-env "$env_tag" 2>/dev/null)"
   else
     unset JAVA_HOME
   fi
 }
 ```
 
-**`jdk_hook`이 실행되는 경우:**
-- `.java-version`이 존재하고
-- 이전과 slug가 **다를 때만**
+**`jdk hook-env`가 실행되는 경우:**
+- `.java-version`(또는 global)에 내용이 존재하고
+- 이전과 env_tag가 **다를 때만**
 
-같은 디렉토리에 머물거나 `.java-version` 없는 곳을 이동할 때는 `jdk_hook`이 실행되지 않는다.
+같은 디렉토리에 머물거나 `.java-version` 없는 곳을 이동할 때는 `jdk hook-env`가 실행되지 않는다.
 
-### slug 비교의 부가 효과
+### env_tag 비교의 부가 효과
 
 `jdk use zulu-11`으로 현재 디렉토리의 `.java-version`을 변경하면,
-다음 프롬프트 표시 시 `_JDKMAN_CURRENT_SLUG`와 새 slug가 달라져 **즉시 적용**된다.
+다음 프롬프트 표시 시 `_JDKMAN_CURRENT_ENV_TAG`와 새 env_tag가 달라져 **즉시 적용**된다.
 `cd` 없이도 반영된다.
 
 ---
 
-## 5. jdk_hook (standalone 바이너리)
+## 5. jdk hook-env (단일 진입점)
 
-`jdk hook-env` 대신 별도 바이너리 `jdk_hook`으로 분리한 이유: **시작 속도**.
+`jdk hook-env`는 `jdk` 바이너리를 그대로 사용하되, **진입점에서 분기**한다.
 
-| | `jdk hook-env --slug` | `jdk_hook` |
-|---|---|---|
-| import | typer + click + rich + requests + ... | json, platform, sys, pathlib (stdlib만) |
-| 예상 실행 시간 | 100~200ms+ | 30~50ms |
-
-`src/jdkman/env_hook.py`에 구현되어 있으며, `pyproject.toml`에 별도 엔트리포인트로 등록된다.
+```python
+# src/jdkman/main.py
+def invoke():
+    if len(sys.argv) > 1 and sys.argv[1] == "hook-env":
+        # Fast path: typer/click/rich/requests 미로드
+        sys.argv = [sys.argv[0]] + sys.argv[2:]
+        from jdkman.env_hook import main
+        main()
+    else:
+        from jdkman.cli import app
+        app()
+```
 
 ```toml
+# pyproject.toml
 [project.scripts]
-jdk = "jdkman.cli:app"
-jdk_hook = "jdkman.env_hook:main"
+jdk = "jdkman.main:invoke"
 ```
 
-Homebrew 배포 시 `jdk_hook` symlink도 함께 생성된다 (`generate_formula.py` 참고).
+`sys.argv` 체크를 import 전에 수행하므로 heavy import가 발생하지 않는다.
 
-### jdk_hook 동작
+| | `jdk hook-env` (fast path) | `jdk install` 등 |
+|---|---|---|
+| import | json, platform, sys, pathlib (stdlib만) | typer + click + rich + requests + ... |
+| 예상 실행 시간 | 30~50ms | 100~200ms+ |
+
+`jdk hook-env`는 `--help`에 노출되지 않는 내부 커맨드다.
+
+### jdk hook-env 동작
 
 ```
-jdk_hook "zulu-21"
+jdk hook-env "zulu-21"
+  → main.invoke(): "hook-env" 감지 → env_hook.main() 호출
   → MANAGED_JVM_DB(~/.jdk/.jdkman 또는 ~/Library/Java/JavaVirtualMachines/.jdkman) 읽기
   → aliases 먼저 resolve
   → installed에서 location 조회
@@ -194,9 +215,21 @@ jdk_hook "zulu-21"
 ### 탐색 순서
 
 1. `$PWD`부터 루트(`/`)까지 상위 디렉토리를 순서대로 탐색
-2. 발견된 `.java-version` 파일의 내용(slug)을 사용
-3. 없으면 `~/.config/jdkman/.java-version.global` (global fallback)
-4. 그것도 없으면 `unset JAVA_HOME`
+2. 발견된 `.java-version` 파일에 **내용이 있으면** 해당 env_tag 사용
+3. 파일이 없거나 빈 파일이면 상위 디렉토리 계속 탐색
+4. 모두 없으면 `~/.config/jdkman/.java-version.global` (global fallback)
+5. 그것도 없으면 `unset JAVA_HOME`
+
+### 빈 파일 동작
+
+`jdk unuse`로 생성된 빈 `.java-version`은 **없는 것과 동일하게** 처리된다.
+상위 디렉토리 탐색을 계속하고, 최종적으로 global 설정이 적용된다.
+
+```
+현재 디렉토리/.java-version  (빈파일)  → skip, 상위 탐색 계속
+상위 디렉토리/.java-version  (없음)    → skip
+~/.config/jdkman/.java-version.global  (zulu-11)  → JAVA_HOME = zulu-11
+```
 
 ### 파일 형식
 
@@ -204,7 +237,7 @@ jdk_hook "zulu-21"
 zulu-21
 ```
 
-slug 한 줄만 작성한다. 빈 파일이면 `unset JAVA_HOME`으로 처리된다.
+env_tag(slug 또는 alias) 한 줄만 작성한다.
 개행 문자는 `$(<file)`로 읽을 때 zsh/bash가 자동으로 제거한다.
 
 ---
@@ -224,12 +257,12 @@ eval "$(jdk activate zsh "$@")"
 ```
 
 `--dev` 옵션이 있으면 `activate_script/zsh_dev`를 사용한다.
-`zsh_dev`는 `zsh`와 동일하지만 `eval` 대신 `echo`를 사용해서 `jdk_hook`의 출력을 터미널에서 직접 확인할 수 있다.
+`zsh_dev`는 `zsh`와 동일하지만 `eval` 대신 `echo`를 사용해서 `jdk hook-env`의 출력을 터미널에서 직접 확인할 수 있다.
 
-### jdk_hook 직접 테스트
+### jdk hook-env 직접 테스트
 
 ```zsh
-jdk_hook zulu-21
+jdk hook-env zulu-21
 # → export JAVA_HOME="/Library/Java/JavaVirtualMachines/zulu-21/Contents/Home"
 ```
 
