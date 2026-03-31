@@ -1,12 +1,50 @@
+export _JDKMAN_SHELL=bash
 export _JDKMAN_ORIG_PATH="$PATH"
+_JDKMAN_CURRENT_SLUG=""
+
+jdk() {
+  case "$1" in
+  deactivate)
+    if [[ ! " $@ " =~ " --help " ]] && [[ ! " $@ " =~ " -h " ]]; then
+      eval "$(command jdk deactivate "${2:-$_JDKMAN_SHELL}")"
+    else
+      command jdk "$@"
+    fi
+    ;;
+  *)
+    command jdk "$@"
+    ;;
+  esac
+}
+
+_jdkman_find_slug() {
+  local dir="$PWD" content
+  while [[ "$dir" != "/" ]]; do
+    if [[ -f "$dir/.java-version" ]]; then
+      content="$(<"$dir/.java-version")"
+      if [[ -n "$content" ]]; then
+        echo "$content"
+        return
+      fi
+    fi
+    dir="$(dirname "$dir")"
+  done
+  if [[ -f "$HOME/.config/jdkman/.java-version.global" ]]; then
+    echo "$(<"$HOME/.config/jdkman/.java-version.global")"
+  fi
+}
 
 _jdkman_hook() {
-  local dir="$PWD"
-  if [[ "$dir" != "$_JDKMAN_LAST_DIR" ]]; then
-    _JDKMAN_LAST_DIR="$dir"
-    local output
-    output="$(jdk hook-env 2>/dev/null)"
-    [[ -n "$output" ]] && echo "$output"
+  local slug
+  slug="$(_jdkman_find_slug)"
+  if [[ "$slug" == "$_JDKMAN_CURRENT_SLUG" ]]; then
+    return
+  fi
+  _JDKMAN_CURRENT_SLUG="$slug"
+  if [[ -n "$slug" ]]; then
+    echo "$(jdk hook-env "$slug" 2>/dev/null)"
+  else
+    unset JAVA_HOME
   fi
 }
 

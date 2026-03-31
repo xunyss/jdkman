@@ -161,7 +161,7 @@ def remote(
     -  jdk remote --all
     -  jdk remote --all zulu
     -  jdk remote --with-feat
-    -  jdk remote --with-jre
+    -  jdk remote --with-jre temu
     -  jdk remote --version 17
     """
     log(f"remote()")
@@ -268,7 +268,7 @@ def upgrade(
         )]
 ):
     """
-    Upgrade an installed JVM distribution.  \\[aliases: update]
+    Upgrade an installed JVM distribution.  [dim]\\[aliases: update][/dim]
 
     Examples:
     -  jdk upgrade zulu-21
@@ -286,7 +286,7 @@ def upgrade(
 @app.command()
 def cleanup():
     """
-    Remove application cache data.  \\[aliases: clean, clear]
+    Remove application cache data.  [dim]\\[aliases: clean, clear][/dim]
 
     Examples:
     -  jdk cleanup

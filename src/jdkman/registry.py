@@ -13,24 +13,24 @@ from .console import log, out, MARK_INVALID, st_div
 from .utils import version_key
 
 
-def read_managed() -> dict[str, dict[str, Any]]:
+def _read_managed() -> dict[str, dict[str, Any]]:
     if MANAGED_JVM_DB.is_file():
         return json.loads(MANAGED_JVM_DB.read_text())
-    return write_managed({})
+    return _write_managed({})
 
 
-def write_managed(managed: dict[str, dict[str, Any]]) -> dict[str, dict[str, Any]]:
+def _write_managed(managed: dict[str, dict[str, Any]]) -> dict[str, dict[str, Any]]:
     MANAGED_JVM_DB.write_text(json.dumps(managed))
     return managed
 
 
-def managed_add_installed(slug: str, dist_info: dict[str, Any], installed_dir: Path):
-    log(f"managed_add_installed()")
+def add_installed(slug: str, dist_info: dict[str, Any], installed_dir: Path):
+    log(f"add_installed()")
     log(f"  slug: {slug}")
     log(f"  dist_info: {pretty_repr(dist_info)}")
     log(f"  installed_dir: {installed_dir}")
 
-    managed = read_managed()
+    managed = _read_managed()
     installed = managed["installed"]
     installed[slug] = dist_info | {
         "location": str(installed_dir)
@@ -41,32 +41,51 @@ def managed_add_installed(slug: str, dist_info: dict[str, Any], installed_dir: P
     del installed[slug]["checksum"]
     del installed[slug]["created_at"]
 
-    write_managed(managed)
+    _write_managed(managed)
 
 
-def managed_del_installed(slug: str):
-    log(f"managed_del_installed()")
+def del_installed(slug: str):
+    log(f"del_installed()")
     log(f"  slug: {slug}")
 
-    managed = read_managed()
+    managed = _read_managed()
     installed = managed["installed"]
     installed.pop(slug)
 
-    write_managed(managed)
+    _write_managed(managed)
 
 
-def managed_add_aliases(aliases: dict[str, str]):
-    pass
+def add_aliases(alias: str, slug: str):
+    log(f"add_aliases()")
+    log(f"  alias: {alias}")
+    log(f"  slug: {slug}")
+
+    managed = _read_managed()
+    aliases = managed["aliases"]
+    aliases[alias] = slug
+
+    _write_managed(managed)
 
 
-def managed_sort_key(managed_item: tuple[str, dict[str, Any]]):
-    slug, managed_info = managed_item
+def del_aliases(alias: str):
+    log(f"del_aliases()")
+    log(f"  alias: {alias}")
+
+    managed = _read_managed()
+    aliases = managed["aliases"]
+    aliases.pop(alias)
+
+    _write_managed(managed)
+
+
+def installed_sort_key(installed_item: tuple[str, dict[str, Any]]):
+    slug, installed_info = installed_item
     return (
-        managed_info["vendor"],
-        managed_info["image_type"],
-        managed_info["features"][0] if managed_info["features"] else "",
-        managed_info["jvm_impl"],
-        managed_info["major_version"],
+        installed_info["vendor"],
+        installed_info["image_type"],
+        installed_info["features"][0] if installed_info["features"] else "",
+        installed_info["jvm_impl"],
+        installed_info["major_version"],
     )
 
 
@@ -74,9 +93,31 @@ def get_installed(sort: bool = False) -> dict[str, dict[str, Any]]:
     log(f"get_installed()")
     log(f"  sort: {sort}")
 
-    managed = read_managed()
+    managed = _read_managed()
     installed = managed["installed"]
-    return dict(sorted(installed.items(), key=managed_sort_key)) if sort else installed
+    return dict(sorted(installed.items(), key=installed_sort_key)) if sort else installed
+
+
+def get_aliases(sort: bool = False) -> dict:
+    log(f"get_aliases()")
+
+    managed = _read_managed()
+    aliases = managed["aliases"]
+    return dict(sorted(aliases.items())) if sort else aliases
+
+
+def get_managed(sort: bool = False) -> dict:
+    log(f"get_managed()")
+
+    managed = _read_managed()
+    installed = managed["installed"]
+    aliases = managed["aliases"]
+
+    if sort:
+        installed = dict(sorted(installed.items(), key=installed_sort_key))
+        aliases = dict(sorted(aliases.items()))
+
+    return installed | aliases
 
 
 def get_outdated() -> dict[str, dict[str, Any]]:
@@ -125,6 +166,7 @@ def get_slug(slug: str) -> dict[str, Any]:
     log(f"get_slug()")
     log(f"  slug: {slug}")
 
+    # TODO: validation 위치 검토
     slugs = fetch_slugs()
     if slug not in slugs:
         out(f"{MARK_INVALID} {st_div(slug)} is invalid!", highlight=False)

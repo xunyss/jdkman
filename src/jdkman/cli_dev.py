@@ -10,7 +10,8 @@ from .console import st_emp, st_dim
 from .console import out, log, MARK_CHECK
 from .detect import scan_unmanaged
 from .installer import download_jvm
-from .registry import get_dist, get_slug, get_installed
+from .registry import get_dist, get_slug, get_installed, get_aliases, get_managed
+
 
 app = typer.Typer()
 
@@ -99,6 +100,26 @@ def installed():
     log(f"installed()")
 
     out(get_installed())
+
+
+@app.command()
+def aliases():
+    """
+    get_aliases()
+    """
+    log(f"aliases()")
+
+    out(get_aliases())
+
+
+@app.command()
+def managed():
+    """
+    get_managed()
+    """
+    log(f"managed()")
+
+    out(get_managed(sort=True))
 
 
 @app.command()

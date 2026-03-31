@@ -4,175 +4,179 @@ from typing import Annotated
 import typer
 from rich.pretty import pretty_repr
 
-from .autocomplete import autocomplete_installed
-from .console import out, log, MARK_CHECK, MARK_INVALID, st_emp, st_dim, st_div
-from .registry import get_installed, read_managed, write_managed
+from .autocomplete import autocomplete_installed, autocomplete_aliases, autocomplete_managed
+from .config import is_dev
+from .console import log, out, MARK_CHECK, MARK_INVALID, st_emp, st_div, st_dim
+from .environments import set_env_file, unset_env_file, set_env_alias, unset_env_alias
+from .registry import get_aliases
+
 
 app = typer.Typer()
 
-_JAVA_VERSION_FILE = ".java-version"
-_GLOBAL_JAVA_VERSION_FILE = Path.home() / ".java-version"
 
-
-@app.command(name="activate", no_args_is_help=True)
+@app.command(rich_help_panel="Environments", no_args_is_help=True)
 def activate(
         shell: Annotated[str, typer.Argument(
             metavar="<SHELL>",
             help="Shell type. (e.g. zsh, bash)"
-        )]
+        )],
+        _dev_mode: Annotated[bool, typer.Option(
+            "--dev", "-d", hidden=True
+        )] = False,
 ):
     """
-    Print shell integration script for auto JDK switching.
+    Print shell integration script for auto JVM-env switching.
 
     Add to your shell profile (~/.zshrc or ~/.bashrc):
-    -  eval "$(jdk env activate zsh)"
-    -  eval "$(jdk env activate bash)"
+    -  eval "$(jdk activate zsh)"
+    -  eval "$(jdk activate bash)"
     """
     log(f"activate()")
     log(f"  shell: {shell}")
+    log(f"  _dev_mode: {_dev_mode}")
 
-    script_file = Path(__file__).parent / f"resources/activate_script/{shell}_dev"
-    if not script_file.is_file():
+    script = f"{shell}_dev" if _dev_mode and is_dev() else shell
+    script = Path(__file__).parent / f"resources/activate_script/{script}"
+    if not script.is_file():
         out(f"{MARK_INVALID} Unsupported shell: {st_div(shell)}")
         raise typer.Exit(code=-1)
 
-    print(script_file.read_text(), end="")
+    print(script.read_text(), end="")
 
 
-@app.command(name="use", no_args_is_help=True)
-def local_version(
-        distro: Annotated[str, typer.Argument(
-            metavar="<DISTRO>",
-            help="JVM distribution to use in this directory.",
-            autocompletion=autocomplete_installed
+@app.command(rich_help_panel="Environments", no_args_is_help=True)
+def deactivate(
+        shell: Annotated[str, typer.Argument(
+            metavar="<SHELL>",
+            help="Shell type. (e.g. zsh, bash)"
         )],
 ):
     """
-    Set local JDK version for current directory.
+    Print shell script to remove auto JVM-env switching.
 
-    Creates a .java-version file in the current directory.
-
-    Examples:
-    -  jdk env local zulu-21
-    -  jdk env local temurin-17
+    Handled automatically by the jdk() shell function:
+    -  jdk deactivate
     """
-    log(f"local_version()")
-    log(f"  distro: {distro}")
+    log(f"deactivate()")
+    log(f"  shell: {shell}")
 
-    managed = read_managed()
-    installed = managed["installed"]
-    aliases = managed["aliases"]
-
-    if distro not in installed and distro not in aliases:
-        out(f"{MARK_INVALID} {st_emp(distro)} is not installed!", highlight=False)
-        out(f"run jdk alias {distro} <INSTALLED_DISTRO>", highlight=False)
+    script = Path(__file__).parent / f"resources/activate_script/{shell}_deactivate"
+    if not script.is_file():
+        out(f"{MARK_INVALID} Unsupported shell: {st_div(shell)}")
         raise typer.Exit(code=-1)
 
-    version_file = Path.cwd() / _JAVA_VERSION_FILE
-    version_file.write_text(distro + "\n")
-    out(f"{MARK_CHECK} Local JDK: {st_emp(distro)} {st_dim(str(version_file))}", highlight=False)
+    print(script.read_text(), end="")
 
 
-@app.command(name="global", no_args_is_help=True)
-def global_version(
+@app.command(rich_help_panel="Environments", no_args_is_help=True)
+def use(
         distro: Annotated[str, typer.Argument(
-            metavar="<DISTRO>",
-            help="JVM distribution to use globally.",
-            autocompletion=autocomplete_installed
+            metavar="<DISTRO|ALIAS>",
+            help="JVM distribution name or alias.",
+            autocompletion=autocomplete_managed
         )],
+        set_global: Annotated[bool, typer.Option(
+            "--global", "-g",
+            help="Set as global fallback (~/.java-version) instead of current directory."
+        )] = False,
 ):
     """
-    Set global JDK version (fallback when no local .java-version).
+    Set Java version for current directory or globally.
 
-    Creates ~/.java-version as the global default.
-
+    Creates a .java-version file in the current directory (default),
+    or ~/.config/jdkman/.java-version.global with --global.
     Examples:
-    -  jdk env global zulu-21
-    -  jdk env global temurin-17
+    -  jdk use zulu-17
+    -  jdk use 11
+    -  jdk use zulu-21 --global
     """
-    log(f"global_version()")
+    log(f"use()")
     log(f"  distro: {distro}")
+    log(f"  set_global: {set_global}")
 
-    installed = get_installed()
-    if distro not in installed:
-        out(f"{MARK_INVALID} {st_emp(distro)} is not installed!", highlight=False)
-        raise typer.Exit(code=-1)
-
-    _GLOBAL_JAVA_VERSION_FILE.write_text(distro + "\n")
-    out(f"{MARK_CHECK} Global JDK: {st_emp(distro)} {st_dim(str(_GLOBAL_JAVA_VERSION_FILE))}", highlight=False)
+    env_file = set_env_file(distro, set_global)
+    out(f"{MARK_CHECK} {'Global' if set_global else 'Local'} Java environment: {st_emp(distro)} {st_dim(env_file)}", highlight=False)
 
 
-@app.command(name="hook-env")
-def hook_env(slug: Annotated[str | None, typer.Option("--slug")]):
+@app.command(rich_help_panel="Environments")
+def unuse(
+        set_global: Annotated[bool, typer.Option(
+            "--global", "-g",
+            help="Clear global Java version (~/.config/jdkman/.java-version.global)."
+        )] = False,
+):
     """
-    Internal: output env exports for the shell hook (called on directory change).
+    Clear Java version for current directory or globally.
+
+    Empties the .java-version file in the current directory (default),
+    or ~/.config/jdkman/.java-version.global with --global.
+    Examples:
+    -  jdk unuse
+    -  jdk unuse --global
     """
-    print(f"hook_env()")
-    print(f"  slug: {slug}")
+    log(f"unuse()")
+    log(f"  set_global: {set_global}")
 
-    managed = read_managed()
-    installed = managed["installed"]
-    aliases = managed["aliases"]
-    if slug not in installed and slug not in aliases:
-        print(f'# jdkman: {slug} is not installed')
-        return
-
-    if slug in aliases:
-        slug = aliases[slug]
-
-    java_home = f"{installed[slug]['location']}/Contents/Home"
-    print(f'export JAVA_HOME="{java_home}"')
+    env_file = unset_env_file(set_global)
+    out(f"{MARK_CHECK} Cleared {'global' if set_global else 'local'} Java environment: {st_dim(env_file)}",  highlight=False)
 
 
-@app.command()
+@app.command(rich_help_panel="Environments")
 def aliases():
-    log(f"alias()")
+    """
+    List all JVM distribution aliases.
 
-    managed = read_managed()
-    aliases = managed["aliases"]
-    log(f"  aliases: {pretty_repr(aliases)}")
+    Examples:
+    -  jdk aliases
+    """
+    log(f"aliases()")
+    log(f"  aliases: {pretty_repr(get_aliases())}")
 
 
-@app.command()
-def alias(
-        ali: Annotated[str, typer.Argument(metavar="<ALIAS>=<DISTRO>", help="Alias name.")],
-        slug: Annotated[str, typer.Argument(metavar="<DISTRO>", help="JVM distribution name.")],
+@app.command(name="alias", rich_help_panel="Environments", no_args_is_help=True)
+def set_alias(
+        alias: Annotated[str, typer.Argument(
+            metavar="<ALIAS>",
+            help="Alias name to create.",
+        )],
+        distro: Annotated[str, typer.Argument(
+            metavar="<DISTRO>",
+            help="Installed JVM distribution name to map to.",
+            autocompletion=autocomplete_installed
+        )],
 ):
     """
-    alias
+    Create an alias for an installed JVM distribution.
+
+    Examples:
+    -  jdk alias 21 zulu-21
+    -  jdk alias lts temurin-21
     """
-    log(f"alias()")
+    log(f"set_alias()")
+    log(f"  alias: {alias}")
+    log(f"  distro: {distro}")
 
-    managed = read_managed()
-    installed = managed["installed"]
-    aliases = managed["aliases"]
-
-    if ali in installed:
-        out(f"** 이미 설치된 distro 이름이야 사용할수 없어: {ali}", highlight=False)
-        raise typer.Exit(code=-1)
-    if slug not in installed:
-        out(f"** {slug} is not installed!", highlight=False)
-        raise typer.Exit(code=-1)
-
-    aliases[ali] = slug  # overwrite
-    write_managed(managed)
-    # managed_add_aliases()
-    out(f"{MARK_CHECK} {ali} -> {slug}")
+    set_env_alias(alias, distro)
+    out(f"{MARK_CHECK} Alias: {st_emp(alias)} -> {st_div(distro)}", highlight=False)
 
 
-@app.command()
-def unalias():
-    log(f"unalias()")
+@app.command(name="unalias", rich_help_panel="Environments", no_args_is_help=True)
+def unset_alias(
+        alias: Annotated[str, typer.Argument(
+            metavar="<ALIAS>",
+            help="Alias name to remove.",
+            autocompletion=autocomplete_aliases
+        )],
+):
+    """
+    Remove a JVM distribution alias.
 
+    Examples:
+    -  jdk unalias 21
+    """
+    log(f"unset_alias()")
+    log(f"  alias: {alias}")
 
-
-
-"""
-
-claude --resume 22c2d77f-92e6-412b-b0b9-883f47a0daab
-
-jdk alias
-jdk use 11
-
-"""
+    unset_env_alias(alias)
+    out(f"{MARK_CHECK} Unalias: {st_emp(alias)}", highlight=False)
 

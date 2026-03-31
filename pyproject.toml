@@ -11,7 +11,7 @@ dependencies = [
 ]
 
 [project.scripts]
-jdk = "jdkman.cli:app"
+jdk = "jdkman.main:invoke"
 
 [tool.setuptools.packages.find]
 where = ["src"]

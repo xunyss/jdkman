@@ -9,7 +9,7 @@ from rich.progress import Progress, BarColumn, DownloadColumn, TransferSpeedColu
 
 from .config import CACHE_DIR, INSTALL_DIR, CLEAN_WORK_DIR, is_macos, is_windows, is_linux
 from .console import log, out, MARK_ARROW, MARK_INVALID, MARK_CHECK, st_emp, st_div, st_dim
-from .registry import managed_add_installed, get_installed, managed_del_installed, get_outdated, get_dist, get_slug
+from .registry import add_installed, del_installed, get_installed, get_outdated, get_slug, get_dist
 from .utils import extract_archive, sha256_file
 
 
@@ -81,14 +81,14 @@ def find_dist_jvm_root(work_dir: Path) -> Path | None:
 def make_jvm_dir_name(slug_info: dict[str, Any]):
     log(f"make_jvm_dir_name()")
 
-    _vendor_alias = {
+    _vendor_aliases = {
         "graalvm": "graalvm-ce",
         "graalvm-community": "graalvm-ce",
         "oracle-graalvm": "graalvm",
         "microsoft": "ms",
         "jetbrains": "jbr",
     }
-    vendor_alias = _vendor_alias.get(slug_info["vendor"], slug_info["vendor"])
+    vendor_alias = _vendor_aliases.get(slug_info["vendor"], slug_info["vendor"])
     feature = slug_info["features"][0] if slug_info["features"] and slug_info["features"] != ["notarized"] else ""
     parts = [vendor_alias]
     if feature:
@@ -134,8 +134,8 @@ def install_jvm(slug: str) -> Path:
     # move to install_dir
     installed_dir = move_jvm_dir(slug, work_dir)
 
-    # update managed
-    managed_add_installed(slug, dist_info, installed_dir)
+    # update managed["installed"]
+    add_installed(slug, dist_info, installed_dir)
 
     # remove cache
     if CLEAN_WORK_DIR:
@@ -163,8 +163,8 @@ def uninstall_jvm(slug: str) -> Path:
     jvm_location = installed[slug]["location"]
     shutil.rmtree(Path(jvm_location), ignore_errors=True)
 
-    # update managed
-    managed_del_installed(slug)
+    # update managed["installed"]
+    del_installed(slug)
 
     # deleted jvm dir
     return jvm_location

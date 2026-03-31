@@ -7,13 +7,16 @@ from pathlib import Path
 from typing import Any
 
 
-# JVM DATA API
-# https://mise-java.jdx.dev/
-# https://mise-java.jdx.dev/jvm/{releaseType}/{operatingSystem}/{architecture}.json
-#   releaseType: ga, ea
-#   operatingSystem: linux, macosx, windows
-#   architecture: aarch64, arm32, i686, x86_64
+#---------------------------------------------------------------------------------------------------
 def get_jvm_api_url() -> str:
+    """
+    JVM DATA API
+    https://mise-java.jdx.dev/
+    https://mise-java.jdx.dev/jvm/{releaseType}/{operatingSystem}/{architecture}.json
+      releaseType: ga, ea
+      operatingSystem: linux, macosx, windows
+      architecture: aarch64, arm32, i686, x86_64
+    """
     _OS_MAP = {
         "Linux": "linux",
         "Darwin": "macosx",
@@ -56,18 +59,24 @@ def is_dev() -> bool:
         pass
     return False
 
-
+#---------------------------------------------------------------------------------------------------
 APP_NAME = "jdkman"
 APP_VERSION =version(APP_NAME)
 JVM_API_URL = get_jvm_api_url()
 
+#---------------------------------------------------------------------------------------------------
 CACHE_DIR = Path.home() / ".cache" / APP_NAME
 CATALOG_CACHE_FILE = CACHE_DIR / ".catalog"
 CATALOG_CACHE_TTL = 60 * 60 * 12  # 12 hours (sec)
 
+CONFIG_DIR = Path.home() / ".config" / APP_NAME
+LOCAL_ENV_FILE = ".java-version"
+GLOBAL_ENV_FILE = CONFIG_DIR / f"{LOCAL_ENV_FILE}.global"
+
 INSTALL_DIR = Path.home() / "Library/Java/JavaVirtualMachines" if is_macos() else Path.home() / ".jdk"
 MANAGED_JVM_DB = INSTALL_DIR / f".{APP_NAME}"
 
+#---------------------------------------------------------------------------------------------------
 # custom typer
 DISABLE_SUGGEST_OPTIONS = True
 CUSTOM_STYLE_HELP = True
@@ -78,7 +87,7 @@ CUSTOM_STYLE_TABLE = True
 FORCE_VERBOSE = is_dev() and True
 CLEAN_WORK_DIR = not is_dev()
 
-
+#---------------------------------------------------------------------------------------------------
 def cached_catalog() -> str | None:
     if CATALOG_CACHE_FILE.exists() and (time.time() - CATALOG_CACHE_FILE.stat().st_mtime) < CATALOG_CACHE_TTL:
         return CATALOG_CACHE_FILE.read_text()
@@ -90,5 +99,6 @@ def cache_catalog(catalog: list[dict[str, Any]]):
 
 def init_dirs():
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    CONFIG_DIR.mkdir(parents=True, exist_ok=True)
     INSTALL_DIR.mkdir(parents=True, exist_ok=True)
 
