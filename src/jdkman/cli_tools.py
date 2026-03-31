@@ -4,7 +4,7 @@ import typer
 
 from .autocomplete import autocomplete_installed
 from .config import is_macos
-from .console import out, log, table, GREEN_CHECK, st_emp, st_nor
+from .console import out, log, table, MARK_CHECK, st_hig, st_dim, st_cod
 from .detect import exec_java_home
 from .mise import mise_link, mise_ls
 
@@ -20,14 +20,14 @@ if is_macos():
             "allow_extra_args": True,
             "ignore_unknown_options": True,
         },
+        help=f"""\
+            Show installed JVM home paths. (macOS only)
+            
+            Wraps /usr/libexec/java_home with identical options.
+            Run '{st_cod('jdk home -h')}' to see all available options.
+        """
     )
     def home(context: typer.Context):
-        """
-        Show installed JVM home paths. (macOS only)
-
-        Wraps /usr/libexec/java_home with identical options.
-        Run [blue]'jdk home -h'[/blue] to see all available options.
-        """
         log(f"home()")
         log(f"  context.args: {context.args}")
 
@@ -61,13 +61,13 @@ def mise(
         is_link = True if mise_tool.get("symlinked_to") else False
         is_active = mise_tool.get("active")
         tab.add_row(
-            st_nor("java"),
-            st_emp(mise_tool["version"]) if is_active else mise_tool["version"],
-            is_link and GREEN_CHECK or None,
-            mise_tool["installed"] and GREEN_CHECK or None,
-            is_active and GREEN_CHECK or None,
-            st_nor(mise_tool["requested_version"]) if is_active else None
+            st_dim("java"),
+            st_hig(mise_tool["version"]) if is_active else mise_tool["version"],
+            is_link and MARK_CHECK or None,
+            mise_tool["installed"] and MARK_CHECK or None,
+            is_active and MARK_CHECK or None,
+            st_dim(mise_tool["requested_version"]) if is_active else None
         )
     out(tab if tab.row_count > 0
-        else f"{GREEN_CHECK} No mise java tools found.")
+        else f"{MARK_CHECK} No mise java tools found.")
 

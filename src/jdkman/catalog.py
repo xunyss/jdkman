@@ -1,10 +1,8 @@
 import json
 from typing import Any
 
-import requests
-
 from .config import JVM_API_URL, cached_catalog, cache_catalog
-from .console import out, log, BLUE_ARROW
+from .console import out, log, MARK_ARROW
 from .utils import version_key
 
 
@@ -31,11 +29,14 @@ def fetch_artifacts() -> list[dict[str, Any]]:
         log(f"  cache found: count: {len(artifacts)}")
     else:
         log(f"  cache not found.")
-        out(f"{BLUE_ARROW} Fetching JVM Database...", highlight=False)
+        out(f"{MARK_ARROW} Fetching JVM Database...", highlight=False)
+
+        import requests  # lazy import
         response = requests.get(JVM_API_URL, timeout=30)
         response.raise_for_status()
         artifacts: list[dict[str, Any]] = response.json()
         cache_catalog(artifacts)
+
         out(f"Fetched: {len(artifacts)}")
 
     return artifacts

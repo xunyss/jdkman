@@ -58,7 +58,7 @@ jobs:
           path: homebrew-tap
 
       - name: Generate Formula
-        run: uv export --no-hashes --format requirements-txt | python scripts/generate_formula.py ${{ steps.version.outputs.VERSION }} > homebrew-tap/Formula/jdkman.rb
+        run: uv export --no-hashes --format requirements-txt | python scripts/homebrew/generate_formula.py ${{ steps.version.outputs.VERSION }} > homebrew-tap/Formula/jdkman.rb
 
       - name: Install Homebrew tap
         run: |
@@ -88,7 +88,7 @@ jobs:
       - name: Insert bottle block into Formula
         run: |
           JSON=$(ls jdkman--*.bottle.json jdkman-*.bottle.json 2>/dev/null | head -1)
-          python scripts/insert_bottle.py "$JSON" homebrew-tap/Formula/jdkman.rb
+          python scripts/homebrew/insert_bottle.py "$JSON" homebrew-tap/Formula/jdkman.rb
 
       - uses: Homebrew/actions/git-user-config@master
 

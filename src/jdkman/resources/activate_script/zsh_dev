@@ -1,0 +1,58 @@
+export _JDKMAN_SHELL=zsh
+export _JDKMAN_ORIG_PATH="$PATH"
+_JDKMAN_CURRENT_ENV_TAG=""
+
+jdk() {
+  case "$1" in
+  deactivate)
+    if [[ ! " $@ " =~ " --help " ]] && [[ ! " $@ " =~ " -h " ]]; then
+      eval "$(command jdk deactivate "${2:-$_JDKMAN_SHELL}")"
+    else
+      command jdk "$@"
+    fi
+    ;;
+  *)
+    command jdk "$@"
+    ;;
+  esac
+}
+
+_jdkman_find_env_tag() {
+  local dir="$PWD" content
+  while [[ "$dir" != "/" ]]; do
+    if [[ -f "$dir/.java-version" ]]; then
+      content="$(<"$dir/.java-version")"
+      if [[ -n "$content" ]]; then
+        echo "$content"
+        return
+      fi
+    fi
+    dir="${dir:h}"
+  done
+  if [[ -f "$HOME/.config/jdkman/.java-version.global" ]]; then
+    echo "$(<"$HOME/.config/jdkman/.java-version.global")"
+  fi
+}
+
+_jdkman_hook() {
+  local env_tag
+  env_tag="$(_jdkman_find_env_tag)"
+  if [[ "$env_tag" == "$_JDKMAN_CURRENT_ENV_TAG" ]]; then
+    return
+  fi
+  _JDKMAN_CURRENT_ENV_TAG="$env_tag"
+  if [[ -n "$env_tag" ]]; then
+    echo "$(jdk hook-env "$env_tag" 2>/dev/null)"
+  else
+    unset JAVA_HOME
+  fi
+}
+
+typeset -ag chpwd_functions
+if [[ -z "${chpwd_functions[(r)_jdkman_hook]+1}" ]]; then
+  chpwd_functions=( _jdkman_hook ${chpwd_functions[@]} )
+fi
+typeset -ag precmd_functions
+if [[ -z "${precmd_functions[(r)_jdkman_hook]+1}" ]]; then
+  precmd_functions=( _jdkman_hook ${precmd_functions[@]} )
+fi

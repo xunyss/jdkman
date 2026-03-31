@@ -83,7 +83,7 @@ def test_write_managed_returns_data(managed_db):
 
 def test_managed_add(managed_db, sample_dist):
     install_dir = Path("/Library/Java/JavaVirtualMachines/zulu-21.jdk")
-    registry.managed_add("zulu-21", sample_dist, install_dir)
+    registry.add_installed("zulu-21", sample_dist, install_dir)
 
     stored = registry._read_managed()
     assert "zulu-21" in stored
@@ -97,15 +97,15 @@ def test_managed_add(managed_db, sample_dist):
 
 
 def test_managed_del(managed_db, sample_dist):
-    registry.managed_add("zulu-21", sample_dist, Path("/some/path"))
-    registry.managed_del("zulu-21")
+    registry.add_installed("zulu-21", sample_dist, Path("/some/path"))
+    registry.del_installed("zulu-21")
     assert "zulu-21" not in registry._read_managed()
 
 
 def test_managed_del_other_entries_intact(managed_db, sample_dist):
-    registry.managed_add("zulu-21", sample_dist, Path("/path/a"))
-    registry.managed_add("temurin-17", {**sample_dist, "version": "17.0.11"}, Path("/path/b"))
-    registry.managed_del("zulu-21")
+    registry.add_installed("zulu-21", sample_dist, Path("/path/a"))
+    registry.add_installed("temurin-17", {**sample_dist, "version": "17.0.11"}, Path("/path/b"))
+    registry.del_installed("zulu-21")
 
     stored = registry._read_managed()
     assert "zulu-21" not in stored

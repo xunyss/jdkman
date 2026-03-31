@@ -1,9 +1,17 @@
 from jdkman.catalog import fetch_slugs
-from jdkman.registry import get_installed
+from jdkman.registry import get_installed, get_aliases, get_managed
 
 
 def autocomplete_installed(incomplete: str):
     return list(get_installed(sort=True).keys())
+
+
+def autocomplete_aliases(incomplete: str):
+    return list(get_aliases(sort=True).keys())
+
+
+def autocomplete_managed(incomplete: str):
+    return list(get_managed(sort=True).keys())
 
 
 def autocomplete_slugs(incomplete: str):

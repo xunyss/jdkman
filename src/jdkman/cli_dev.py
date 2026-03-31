@@ -6,11 +6,12 @@ import typer
 from .autocomplete import autocomplete_slugs
 from .catalog import fetch_artifacts
 from .config import CACHE_DIR
-from .console import st_emp, st_nor
-from .console import out, log, GREEN_CHECK
+from .console import st_emp, st_dim
+from .console import out, log, MARK_CHECK
 from .detect import scan_unmanaged
 from .installer import download_jvm
-from .registry import get_dist, get_slug, get_installed
+from .registry import get_dist, get_slug, get_installed, get_aliases, get_managed
+
 
 app = typer.Typer()
 
@@ -71,7 +72,7 @@ def download(
     log(f"  distro: {distro}")
 
     dist_file = download_jvm(get_dist(distro))
-    out(f"{GREEN_CHECK} Downloaded: {st_emp(distro)} {st_nor(dist_file.name)}", highlight=False)
+    out(f"{MARK_CHECK} Downloaded: {st_emp(distro)} {st_dim(dist_file.name)}", highlight=False)
 
 
 @app.command()
@@ -99,6 +100,26 @@ def installed():
     log(f"installed()")
 
     out(get_installed())
+
+
+@app.command()
+def aliases():
+    """
+    get_aliases()
+    """
+    log(f"aliases()")
+
+    out(get_aliases())
+
+
+@app.command()
+def managed():
+    """
+    get_managed()
+    """
+    log(f"managed()")
+
+    out(get_managed(sort=True))
 
 
 @app.command()

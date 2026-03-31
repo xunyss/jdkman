@@ -9,7 +9,7 @@ from rich.pretty import pretty_repr
 
 from .catalog import fetch_slugs
 from .config import CACHE_DIR, MANAGED_JVM_DB
-from .console import log, out, RED_WARNING, st_div
+from .console import log, out, MARK_INVALID, st_div
 from .utils import version_key
 
 
@@ -24,40 +24,68 @@ def _write_managed(managed: dict[str, dict[str, Any]]) -> dict[str, dict[str, An
     return managed
 
 
-def managed_add(slug: str, dist_info: dict[str, Any], installed_dir: Path):
-    log(f"managed_add()")
+def add_installed(slug: str, dist_info: dict[str, Any], installed_dir: Path):
+    log(f"add_installed()")
     log(f"  slug: {slug}")
     log(f"  dist_info: {pretty_repr(dist_info)}")
     log(f"  installed_dir: {installed_dir}")
 
     managed = _read_managed()
-    managed[slug] = dist_info | {
+    installed = managed["installed"]
+    installed[slug] = dist_info | {
         "location": str(installed_dir)
     }
-    del managed[slug]["file_type"]
-    del managed[slug]["url"]
-    del managed[slug]["checksum"]
-    del managed[slug]["created_at"]
+
+    del installed[slug]["file_type"]
+    del installed[slug]["url"]
+    del installed[slug]["checksum"]
+    del installed[slug]["created_at"]
+
     _write_managed(managed)
 
 
-def managed_del(slug: str):
-    log(f"managed_del()")
+def del_installed(slug: str):
+    log(f"del_installed()")
     log(f"  slug: {slug}")
 
     managed = _read_managed()
-    managed.pop(slug)
+    installed = managed["installed"]
+    installed.pop(slug)
+
     _write_managed(managed)
 
 
-def managed_sort_key(managed_item: tuple[str, dict[str, Any]]):
-    slug, managed_info = managed_item
+def add_aliases(alias: str, slug: str):
+    log(f"add_aliases()")
+    log(f"  alias: {alias}")
+    log(f"  slug: {slug}")
+
+    managed = _read_managed()
+    aliases = managed["aliases"]
+    aliases[alias] = slug
+
+    _write_managed(managed)
+
+
+def del_aliases(alias: str):
+    log(f"del_aliases()")
+    log(f"  alias: {alias}")
+
+    managed = _read_managed()
+    aliases = managed["aliases"]
+    aliases.pop(alias)
+
+    _write_managed(managed)
+
+
+def installed_sort_key(installed_item: tuple[str, dict[str, Any]]):
+    slug, installed_info = installed_item
     return (
-        managed_info["vendor"],
-        managed_info["image_type"],
-        managed_info["features"][0] if managed_info["features"] else "",
-        managed_info["jvm_impl"],
-        managed_info["major_version"],
+        installed_info["vendor"],
+        installed_info["image_type"],
+        installed_info["features"][0] if installed_info["features"] else "",
+        installed_info["jvm_impl"],
+        installed_info["major_version"],
     )
 
 
@@ -66,7 +94,30 @@ def get_installed(sort: bool = False) -> dict[str, dict[str, Any]]:
     log(f"  sort: {sort}")
 
     managed = _read_managed()
-    return dict(sorted(managed.items(), key=managed_sort_key)) if sort else managed
+    installed = managed["installed"]
+    return dict(sorted(installed.items(), key=installed_sort_key)) if sort else installed
+
+
+def get_aliases(sort: bool = False) -> dict:
+    log(f"get_aliases()")
+
+    managed = _read_managed()
+    aliases = managed["aliases"]
+    return dict(sorted(aliases.items())) if sort else aliases
+
+
+def get_managed(sort: bool = False) -> dict:
+    log(f"get_managed()")
+
+    managed = _read_managed()
+    installed = managed["installed"]
+    aliases = managed["aliases"]
+
+    if sort:
+        installed = dict(sorted(installed.items(), key=installed_sort_key))
+        aliases = dict(sorted(aliases.items()))
+
+    return installed | aliases
 
 
 def get_outdated() -> dict[str, dict[str, Any]]:
@@ -115,10 +166,11 @@ def get_slug(slug: str) -> dict[str, Any]:
     log(f"get_slug()")
     log(f"  slug: {slug}")
 
+    # TODO: validation 위치 검토
     slugs = fetch_slugs()
     if slug not in slugs:
-        out(f"{RED_WARNING} {st_div(slug)} is invalid!", highlight=False)
-        raise typer.Exit(code=1)
+        out(f"{MARK_INVALID} {st_div(slug)} is invalid!", highlight=False)
+        raise typer.Exit(code=-1)
 
     return slugs.get(slug)
 
