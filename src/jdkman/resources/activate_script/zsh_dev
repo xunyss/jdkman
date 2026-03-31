@@ -1,6 +1,6 @@
 export _JDKMAN_SHELL=zsh
 export _JDKMAN_ORIG_PATH="$PATH"
-_JDKMAN_CURRENT_SLUG=""
+_JDKMAN_CURRENT_ENV_TAG=""
 
 jdk() {
   case "$1" in
@@ -17,7 +17,7 @@ jdk() {
   esac
 }
 
-_jdkman_find_slug() {
+_jdkman_find_env_tag() {
   local dir="$PWD" content
   while [[ "$dir" != "/" ]]; do
     if [[ -f "$dir/.java-version" ]]; then
@@ -35,14 +35,14 @@ _jdkman_find_slug() {
 }
 
 _jdkman_hook() {
-  local slug
-  slug="$(_jdkman_find_slug)"
-  if [[ "$slug" == "$_JDKMAN_CURRENT_SLUG" ]]; then
+  local env_tag
+  env_tag="$(_jdkman_find_env_tag)"
+  if [[ "$env_tag" == "$_JDKMAN_CURRENT_ENV_TAG" ]]; then
     return
   fi
-  _JDKMAN_CURRENT_SLUG="$slug"
-  if [[ -n "$slug" ]]; then
-    echo "$(jdk hook-env "$slug" 2>/dev/null)"
+  _JDKMAN_CURRENT_ENV_TAG="$env_tag"
+  if [[ -n "$env_tag" ]]; then
+    echo "$(jdk hook-env "$env_tag" 2>/dev/null)"
   else
     unset JAVA_HOME
   fi

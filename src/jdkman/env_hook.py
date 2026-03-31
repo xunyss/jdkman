@@ -14,7 +14,7 @@ def main():
     if len(sys.argv) < 2:
         sys.exit(1)
 
-    slug = sys.argv[1]
+    env_tag = sys.argv[1]
 
     # Mirror config.py path logic without importing it
     if platform.system() == "Darwin":
@@ -32,14 +32,14 @@ def main():
     aliases = managed.get("aliases", {})
 
     # Resolve alias → actual slug
-    if slug in aliases:
-        slug = aliases[slug]
+    if env_tag in aliases:
+        env_tag = aliases[env_tag]
 
-    if slug not in installed:
-        print(f"# jdkman: {slug} is not installed", file=sys.stderr)
+    if env_tag not in installed:
+        print(f"# jdkman: {env_tag} is not installed", file=sys.stderr)
         sys.exit(1)
 
-    location = installed[slug]["location"]
+    location = installed[env_tag]["location"]
     java_home = f"{location}/Contents/Home" if platform.system() == "Darwin" else location
 
     print(f'export JAVA_HOME="{java_home}"')

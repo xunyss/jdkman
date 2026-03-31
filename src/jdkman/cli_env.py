@@ -157,7 +157,7 @@ def set_alias(
     log(f"  distro: {distro}")
 
     set_env_alias(alias, distro)
-    out(f"{MARK_CHECK} Alias: {st_emp(alias)} -> {st_div(distro)}", highlight=False)
+    out(f"{MARK_CHECK} Alias: {st_emp(alias)} → {st_div(distro)}", highlight=False)
 
 
 @app.command(name="unalias", rich_help_panel="Environments", no_args_is_help=True)

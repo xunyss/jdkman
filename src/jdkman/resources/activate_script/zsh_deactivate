@@ -4,6 +4,6 @@ precmd_functions=( ${precmd_functions[@]:#_jdkman_hook} )
 unset JAVA_HOME
 unset _JDKMAN_SHELL
 unset _JDKMAN_ORIG_PATH
-unset _JDKMAN_CURRENT_SLUG
+unset _JDKMAN_CURRENT_ENV_TAG
 
-unfunction jdk _jdkman_find_slug _jdkman_hook 2>/dev/null
+unfunction jdk _jdkman_find_env_tag _jdkman_hook 2>/dev/null
