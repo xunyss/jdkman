@@ -14,73 +14,11 @@ A command-line tool for installing and managing OpenJDK distributions.
 - [ ] jdkman-0.2.12.arm64_sequoia.bottle.tar.gz vs jdkman--0.2.12.arm64_sequoia.bottle.tar.gz
 - [ ] rich - to standard colors
 - [ ] 중복제거 - out(f"{MARK_INVALID} {st_emp(slug)} is not installed!", highlight=False)
+- [ ] eval "$(jdk-hook --slug "$slug" 2>/dev/null)" 별도 스크립트로 (성능)
 
 ```
 claude --resume 2e868346-0793-4682-abc8-cffbff1aa93d
 ```
-
-### colors
-
-터미널 앱/테마마다 색상 표현이 달라지는 문제를 피하기 위해, 아래 기준으로 색상을 사용한다.
-
-**ANSI 16색 (터미널 테마가 재정의함)**
-
-테마를 만든 사람이 해당 배경에 잘 보이도록 색을 조정해두기 때문에, 결과적으로 테마에 자연스럽게 적응된다.
-accent 색상(강조, 경고, 오류 등)에 사용한다.
-
-일반 8색 (0~7):
-
-| 번호 | Rich named color |
-|----|------------------|
-| 0  | `black`          |
-| 1  | `red`            |
-| 2  | `green`          |
-| 3  | `yellow`         |
-| 4  | `blue`           |
-| 5  | `magenta`        |
-| 6  | `cyan`           |
-| 7  | `white`          |
-
-밝은 8색 (8~15):
-
-| 번호 | Rich named color             |
-|----|------------------------------|
-| 8  | `bright_black` (= dark gray) |
-| 9  | `bright_red`                 |
-| 10 | `bright_green`               |
-| 11 | `bright_yellow`              |
-| 12 | `bright_blue`                |
-| 13 | `bright_magenta`             |
-| 14 | `bright_cyan`                |
-| 15 | `bright_white`               |
-
-**텍스트 스타일 (항상 배경과 대비됨)**
-
-색 지정 없이 현재 foreground를 기준으로 상대적으로 동작하므로, 어떤 테마에서도 안전하다.
-일반 텍스트, 강도 조절에 사용한다.
-
-| 스타일      | Rich markup    | 비고                       |
-|----------|----------------|--------------------------|
-| 기본       | (markup 없음)    |                          |
-| 굵게       | `[bold]`       |                          |
-| 흐리게      | `[dim]`        |                          |
-| 기울임      | `[italic]`     |                          |
-| 밑줄       | `[underline]`  |                          |
-| 이중 밑줄    | `[underline2]` | 터미널 지원 여부 다양             |
-| 윗줄       | `[overline]`   | 터미널 지원 여부 다양             |
-| 취소선      | `[strike]`     |                          |
-| 색반전      | `[reverse]`    | foreground/background 교체 |
-| 깜빡임 (느림) | `[blink]`      | 터미널 지원 여부 다양             |
-| 깜빡임 (빠름) | `[blink2]`     | 터미널 지원 여부 다양             |
-| 숨김       | `[conceal]`    | 터미널 지원 여부 다양             |
-| 테두리      | `[frame]`      | 터미널 지원 여부 다양             |
-| 원형 테두리   | `[encircle]`   | 터미널 지원 여부 다양             |
-
-**사용하지 않는 것**
-
-- `[grey70]`, `[color(220)]`, `[#FFD700]` 등 절대 색상 → 특정 테마에서 배경과 구분 안 될 수 있음
-
----
 
 ## Why jdkman?
 
