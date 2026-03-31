@@ -9,7 +9,7 @@ from rich.progress import Progress, BarColumn, DownloadColumn, TransferSpeedColu
 
 from .config import CACHE_DIR, INSTALL_DIR, CLEAN_WORK_DIR, is_macos, is_windows, is_linux
 from .console import log, out, MARK_ARROW, MARK_INVALID, MARK_CHECK, st_emp, st_div, st_dim
-from .registry import managed_add, get_installed, managed_del, get_outdated, get_dist, get_slug
+from .registry import managed_add_installed, get_installed, managed_del_installed, get_outdated, get_dist, get_slug
 from .utils import extract_archive, sha256_file
 
 
@@ -135,7 +135,7 @@ def install_jvm(slug: str) -> Path:
     installed_dir = move_jvm_dir(slug, work_dir)
 
     # update managed
-    managed_add(slug, dist_info, installed_dir)
+    managed_add_installed(slug, dist_info, installed_dir)
 
     # remove cache
     if CLEAN_WORK_DIR:
@@ -164,7 +164,7 @@ def uninstall_jvm(slug: str) -> Path:
     shutil.rmtree(Path(jvm_location), ignore_errors=True)
 
     # update managed
-    managed_del(slug)
+    managed_del_installed(slug)
 
     # deleted jvm dir
     return jvm_location

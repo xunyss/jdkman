@@ -1,15 +1,12 @@
-import os
-import sys
 from pathlib import Path
 from typing import Annotated
 
 import typer
+from rich.pretty import pretty_repr
 
 from .autocomplete import autocomplete_installed
-from .config import is_macos
 from .console import out, log, MARK_CHECK, MARK_INVALID, st_emp, st_dim, st_div
-from .registry import get_installed
-
+from .registry import get_installed, read_managed, write_managed
 
 app = typer.Typer()
 
@@ -17,39 +14,12 @@ _JAVA_VERSION_FILE = ".java-version"
 _GLOBAL_JAVA_VERSION_FILE = Path.home() / ".java-version"
 
 
-def _java_home_from_location(location: str) -> str:
-    if is_macos():
-        return f"{location}/Contents/Home"
-    return location
-
-
-def _find_java_version(start_dir: Path) -> tuple[str, Path] | None:
-    """Walk up directory tree looking for .java-version, fallback to global."""
-    current = start_dir.resolve()
-    while True:
-        candidate = current / _JAVA_VERSION_FILE
-        if candidate.is_file():
-            slug = candidate.read_text().strip()
-            if slug:
-                return slug, candidate
-        parent = current.parent
-        if parent == current:
-            break
-        current = parent
-
-    if _GLOBAL_JAVA_VERSION_FILE.is_file():
-        slug = _GLOBAL_JAVA_VERSION_FILE.read_text().strip()
-        if slug:
-            return slug, _GLOBAL_JAVA_VERSION_FILE
-
-    return None
-
-
-@app.command(name="activate")
+@app.command(name="activate", no_args_is_help=True)
 def activate(
         shell: Annotated[str, typer.Argument(
-            help="Shell type. (zsh, bash)"
-        )] = "zsh",
+            metavar="<SHELL>",
+            help="Shell type. (e.g. zsh, bash)"
+        )]
 ):
     """
     Print shell integration script for auto JDK switching.
@@ -61,16 +31,15 @@ def activate(
     log(f"activate()")
     log(f"  shell: {shell}")
 
-    if shell == "zsh":
-        print(_zsh_script(), end="")
-    elif shell == "bash":
-        print(_bash_script(), end="")
-    else:
+    script_file = Path(__file__).parent / f"resources/activate_script/{shell}_dev"
+    if not script_file.is_file():
         out(f"{MARK_INVALID} Unsupported shell: {st_div(shell)}")
         raise typer.Exit(code=-1)
 
+    print(script_file.read_text(), end="")
 
-@app.command(name="local", no_args_is_help=True)
+
+@app.command(name="use", no_args_is_help=True)
 def local_version(
         distro: Annotated[str, typer.Argument(
             metavar="<DISTRO>",
@@ -90,9 +59,13 @@ def local_version(
     log(f"local_version()")
     log(f"  distro: {distro}")
 
-    installed = get_installed()
-    if distro not in installed:
+    managed = read_managed()
+    installed = managed["installed"]
+    aliases = managed["aliases"]
+
+    if distro not in installed and distro not in aliases:
         out(f"{MARK_INVALID} {st_emp(distro)} is not installed!", highlight=False)
+        out(f"run jdk alias {distro} <INSTALLED_DISTRO>", highlight=False)
         raise typer.Exit(code=-1)
 
     version_file = Path.cwd() / _JAVA_VERSION_FILE
@@ -129,75 +102,77 @@ def global_version(
     out(f"{MARK_CHECK} Global JDK: {st_emp(distro)} {st_dim(str(_GLOBAL_JAVA_VERSION_FILE))}", highlight=False)
 
 
-@app.command(name="hook-env", hidden=True)
-def hook_env():
-    """Internal: output env exports for the shell hook (called on directory change)."""
-    log(f"hook_env()")
+@app.command(name="hook-env")
+def hook_env(slug: Annotated[str | None, typer.Option("--slug")]):
+    """
+    Internal: output env exports for the shell hook (called on directory change).
+    """
+    print(f"hook_env()")
+    print(f"  slug: {slug}")
 
-    cwd = Path(os.environ.get("PWD", str(Path.cwd())))
-    result = _find_java_version(cwd)
-
-    if result is None:
-        print('unset JAVA_HOME', file=sys.stdout)
-        print('export PATH="$_JDKMAN_ORIG_PATH"', file=sys.stdout)
+    managed = read_managed()
+    installed = managed["installed"]
+    aliases = managed["aliases"]
+    if slug not in installed and slug not in aliases:
+        print(f'# jdkman: {slug} is not installed')
         return
 
-    slug, version_file = result
-    log(f"  slug: {slug}")
-    log(f"  version_file: {version_file}")
+    if slug in aliases:
+        slug = aliases[slug]
 
-    installed = get_installed()
+    java_home = f"{installed[slug]['location']}/Contents/Home"
+    print(f'export JAVA_HOME="{java_home}"')
+
+
+@app.command()
+def aliases():
+    log(f"alias()")
+
+    managed = read_managed()
+    aliases = managed["aliases"]
+    log(f"  aliases: {pretty_repr(aliases)}")
+
+
+@app.command()
+def alias(
+        ali: Annotated[str, typer.Argument(metavar="<ALIAS>=<DISTRO>", help="Alias name.")],
+        slug: Annotated[str, typer.Argument(metavar="<DISTRO>", help="JVM distribution name.")],
+):
+    """
+    alias
+    """
+    log(f"alias()")
+
+    managed = read_managed()
+    installed = managed["installed"]
+    aliases = managed["aliases"]
+
+    if ali in installed:
+        out(f"** 이미 설치된 distro 이름이야 사용할수 없어: {ali}", highlight=False)
+        raise typer.Exit(code=-1)
     if slug not in installed:
-        print(f'# jdkman: {slug} is not installed', file=sys.stderr)
-        return
+        out(f"** {slug} is not installed!", highlight=False)
+        raise typer.Exit(code=-1)
 
-    java_home = _java_home_from_location(installed[slug]["location"])
-    print(f'export JAVA_HOME="{java_home}"', file=sys.stdout)
-    print(f'export PATH="{java_home}/bin:$_JDKMAN_ORIG_PATH"', file=sys.stdout)
-
-
-def _zsh_script() -> str:
-    return '''\
-export _JDKMAN_ORIG_PATH="$PATH"
-
-_jdkman_hook_chpwd() {
-  _JDKMAN_LAST_DIR="$PWD"
-  eval "$(jdk env hook-env 2>/dev/null)"
-}
-
-_jdkman_hook_precmd() {
-  if [[ "$PWD" != "$_JDKMAN_LAST_DIR" ]]; then
-    _JDKMAN_LAST_DIR="$PWD"
-    eval "$(jdk env hook-env 2>/dev/null)"
-  fi
-}
-
-typeset -ag chpwd_functions
-if [[ -z "${chpwd_functions[(r)_jdkman_hook_chpwd]+1}" ]]; then
-  chpwd_functions=( _jdkman_hook_chpwd ${chpwd_functions[@]} )
-fi
-typeset -ag precmd_functions
-if [[ -z "${precmd_functions[(r)_jdkman_hook_precmd]+1}" ]]; then
-  precmd_functions=( _jdkman_hook_precmd ${precmd_functions[@]} )
-fi
-'''
+    aliases[ali] = slug  # overwrite
+    write_managed(managed)
+    # managed_add_aliases()
+    out(f"{MARK_CHECK} {ali} -> {slug}")
 
 
-def _bash_script() -> str:
-    return '''\
-export _JDKMAN_ORIG_PATH="$PATH"
+@app.command()
+def unalias():
+    log(f"unalias()")
 
-_jdkman_hook() {
-  local dir="$PWD"
-  if [[ "$dir" != "$_JDKMAN_LAST_DIR" ]]; then
-    _JDKMAN_LAST_DIR="$dir"
-    local output
-    output="$(jdk env hook-env 2>/dev/null)"
-    [[ -n "$output" ]] && eval "$output"
-  fi
-}
 
-if [[ "$PROMPT_COMMAND" != *"_jdkman_hook"* ]]; then
-  PROMPT_COMMAND="_jdkman_hook${PROMPT_COMMAND:+;$PROMPT_COMMAND}"
-fi
-'''
+
+
+"""
+
+claude --resume 22c2d77f-92e6-412b-b0b9-883f47a0daab
+
+jdk alias
+jdk use 11
+
+"""
+

@@ -13,41 +13,50 @@ from .console import log, out, MARK_INVALID, st_div
 from .utils import version_key
 
 
-def _read_managed() -> dict[str, dict[str, Any]]:
+def read_managed() -> dict[str, dict[str, Any]]:
     if MANAGED_JVM_DB.is_file():
         return json.loads(MANAGED_JVM_DB.read_text())
-    return _write_managed({})
+    return write_managed({})
 
 
-def _write_managed(managed: dict[str, dict[str, Any]]) -> dict[str, dict[str, Any]]:
+def write_managed(managed: dict[str, dict[str, Any]]) -> dict[str, dict[str, Any]]:
     MANAGED_JVM_DB.write_text(json.dumps(managed))
     return managed
 
 
-def managed_add(slug: str, dist_info: dict[str, Any], installed_dir: Path):
-    log(f"managed_add()")
+def managed_add_installed(slug: str, dist_info: dict[str, Any], installed_dir: Path):
+    log(f"managed_add_installed()")
     log(f"  slug: {slug}")
     log(f"  dist_info: {pretty_repr(dist_info)}")
     log(f"  installed_dir: {installed_dir}")
 
-    managed = _read_managed()
-    managed[slug] = dist_info | {
+    managed = read_managed()
+    installed = managed["installed"]
+    installed[slug] = dist_info | {
         "location": str(installed_dir)
     }
-    del managed[slug]["file_type"]
-    del managed[slug]["url"]
-    del managed[slug]["checksum"]
-    del managed[slug]["created_at"]
-    _write_managed(managed)
+
+    del installed[slug]["file_type"]
+    del installed[slug]["url"]
+    del installed[slug]["checksum"]
+    del installed[slug]["created_at"]
+
+    write_managed(managed)
 
 
-def managed_del(slug: str):
-    log(f"managed_del()")
+def managed_del_installed(slug: str):
+    log(f"managed_del_installed()")
     log(f"  slug: {slug}")
 
-    managed = _read_managed()
-    managed.pop(slug)
-    _write_managed(managed)
+    managed = read_managed()
+    installed = managed["installed"]
+    installed.pop(slug)
+
+    write_managed(managed)
+
+
+def managed_add_aliases(aliases: dict[str, str]):
+    pass
 
 
 def managed_sort_key(managed_item: tuple[str, dict[str, Any]]):
@@ -65,8 +74,9 @@ def get_installed(sort: bool = False) -> dict[str, dict[str, Any]]:
     log(f"get_installed()")
     log(f"  sort: {sort}")
 
-    managed = _read_managed()
-    return dict(sorted(managed.items(), key=managed_sort_key)) if sort else managed
+    managed = read_managed()
+    installed = managed["installed"]
+    return dict(sorted(installed.items(), key=managed_sort_key)) if sort else installed
 
 
 def get_outdated() -> dict[str, dict[str, Any]]:

@@ -11,9 +11,9 @@ from .config import (
     CUSTOM_STYLE_HELP, CUSTOM_STYLE_ERROR, CUSTOM_STYLE_TABLE, APP_VERSION,
     platform_name
 )
-from .custom.format_error import ErrorFormatter
-from .custom.format_help import HelpFormatter
-from .custom.option_parser import OptionParserPatch
+from .custom_typer.format_error import ErrorFormatter
+from .custom_typer.format_help import HelpFormatter
+from .custom_typer.option_parser import OptionParserPatch
 
 
 _state = {
@@ -62,6 +62,7 @@ def out(*objs: Any, **kwargs: Any):
 
 
 def log(*objs: Any, **kwargs: Any):
+    # `"_JDK_COMPLETE" in os.environ` => autocomplete: [TAB] key in.
     if not _state["verbose"] or "_JDK_COMPLETE" in os.environ:
         return
     prefix = Text.from_markup("[italic bright_black]verbose[/italic bright_black] ")

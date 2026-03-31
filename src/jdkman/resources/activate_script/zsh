@@ -1,0 +1,39 @@
+export _JDKMAN_ORIG_PATH="$PATH"
+_JDKMAN_CURRENT_SLUG=""
+
+_jdkman_find_slug() {
+  local dir="$PWD"
+  while [[ "$dir" != "/" ]]; do
+    if [[ -f "$dir/.java-version" ]]; then
+      echo "$(<"$dir/.java-version")"
+      return
+    fi
+    dir="${dir:h}"
+  done
+  if [[ -f "$HOME/.java-version" ]]; then
+    echo "$(<"$HOME/.java-version")"
+  fi
+}
+
+_jdkman_hook() {
+  local slug
+  slug="$(_jdkman_find_slug)"
+  if [[ "$slug" == "$_JDKMAN_CURRENT_SLUG" ]]; then
+    return
+  fi
+  _JDKMAN_CURRENT_SLUG="$slug"
+  if [[ -n "$slug" ]]; then
+    eval "$(jdk hook-env --slug "$slug" 2>/dev/null)"
+  else
+    unset JAVA_HOME
+  fi
+}
+
+typeset -ag chpwd_functions
+if [[ -z "${chpwd_functions[(r)_jdkman_hook]+1}" ]]; then
+  chpwd_functions=( _jdkman_hook ${chpwd_functions[@]} )
+fi
+typeset -ag precmd_functions
+if [[ -z "${precmd_functions[(r)_jdkman_hook]+1}" ]]; then
+  precmd_functions=( _jdkman_hook ${precmd_functions[@]} )
+fi

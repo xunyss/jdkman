@@ -25,12 +25,9 @@ app = typer.Typer(
 )
 app.add_typer(
     env_app,
-    name="env",
-    help="Manage per-directory JDK auto-switching.",
-    rich_help_panel="Tools"
 )
 app.add_typer(
-    tools_app
+    tools_app,
 )
 if is_dev():
     app.add_typer(
@@ -42,7 +39,17 @@ if is_dev():
 
 
 def intercept_args(value: bool):
-    if is_dev():
+    """
+    --show-completion:
+        Same output as `_JDK_COMPLETE=source_zsh jdk` (with a leading '\n')
+    --install-completion:
+        Creates "~/.zfunc/_jdk"
+            with the output of `_JDK_COMPLETE=source_zsh jdk`
+        Appends to "~/.zshrc"
+            fpath+=~/.zfunc; autoload -Uz compinit; compinit
+            zstyle ':completion:*' menu select
+    """
+    if is_dev():  # Can be tested with dev_completion.zsh
         completion_opts = {"--install-completion"}
     else:
         completion_opts = {"--install-completion", "--show-completion"}

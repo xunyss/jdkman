@@ -1,0 +1,15 @@
+export _JDKMAN_ORIG_PATH="$PATH"
+
+_jdkman_hook() {
+  local dir="$PWD"
+  if [[ "$dir" != "$_JDKMAN_LAST_DIR" ]]; then
+    _JDKMAN_LAST_DIR="$dir"
+    local output
+    output="$(jdk hook-env 2>/dev/null)"
+    [[ -n "$output" ]] && eval "$output"
+  fi
+}
+
+if [[ "$PROMPT_COMMAND" != *"_jdkman_hook"* ]]; then
+  PROMPT_COMMAND="_jdkman_hook${PROMPT_COMMAND:+;$PROMPT_COMMAND}"
+fi

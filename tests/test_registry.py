@@ -55,7 +55,7 @@ def sample_dist():
 # ── _read_managed / _write_managed ───────────────────────────────────────────
 
 def test_read_managed_creates_file_when_missing(managed_db):
-    result = registry._read_managed()
+    result = registry.read_managed()
     assert result == {}
     assert managed_db.exists()
     assert json.loads(managed_db.read_text()) == {}
@@ -64,18 +64,18 @@ def test_read_managed_creates_file_when_missing(managed_db):
 def test_read_managed_returns_existing_data(managed_db):
     data = {"zulu-21": {"version": "21.0.5", "location": "/path"}}
     managed_db.write_text(json.dumps(data))
-    assert registry._read_managed() == data
+    assert registry.read_managed() == data
 
 
 def test_write_managed_persists(managed_db):
     data = {"temurin-17": {"version": "17.0.11", "location": "/path"}}
-    registry._write_managed(data)
+    registry.write_managed(data)
     assert json.loads(managed_db.read_text()) == data
 
 
 def test_write_managed_returns_data(managed_db):
     data = {"zulu-21": {"version": "21.0.5"}}
-    result = registry._write_managed(data)
+    result = registry.write_managed(data)
     assert result == data
 
 
@@ -83,9 +83,9 @@ def test_write_managed_returns_data(managed_db):
 
 def test_managed_add(managed_db, sample_dist):
     install_dir = Path("/Library/Java/JavaVirtualMachines/zulu-21.jdk")
-    registry.managed_add("zulu-21", sample_dist, install_dir)
+    registry.managed_add_installed("zulu-21", sample_dist, install_dir)
 
-    stored = registry._read_managed()
+    stored = registry.read_managed()
     assert "zulu-21" in stored
 
     entry = stored["zulu-21"]
@@ -97,17 +97,17 @@ def test_managed_add(managed_db, sample_dist):
 
 
 def test_managed_del(managed_db, sample_dist):
-    registry.managed_add("zulu-21", sample_dist, Path("/some/path"))
-    registry.managed_del("zulu-21")
-    assert "zulu-21" not in registry._read_managed()
+    registry.managed_add_installed("zulu-21", sample_dist, Path("/some/path"))
+    registry.managed_del_installed("zulu-21")
+    assert "zulu-21" not in registry.read_managed()
 
 
 def test_managed_del_other_entries_intact(managed_db, sample_dist):
-    registry.managed_add("zulu-21", sample_dist, Path("/path/a"))
-    registry.managed_add("temurin-17", {**sample_dist, "version": "17.0.11"}, Path("/path/b"))
-    registry.managed_del("zulu-21")
+    registry.managed_add_installed("zulu-21", sample_dist, Path("/path/a"))
+    registry.managed_add_installed("temurin-17", {**sample_dist, "version": "17.0.11"}, Path("/path/b"))
+    registry.managed_del_installed("zulu-21")
 
-    stored = registry._read_managed()
+    stored = registry.read_managed()
     assert "zulu-21" not in stored
     assert "temurin-17" in stored
 
