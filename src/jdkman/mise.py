@@ -5,7 +5,7 @@ from typing import Any
 
 import typer
 
-from .config import is_macos, is_windows, is_linux
+from .config import is_macos
 from .console import out, MARK_INVALID, log, st_emp, st_div, st_dim
 from .registry import get_installed, get_slug
 
@@ -19,10 +19,6 @@ def link_path(location: str) -> str:
     # todo: impl other OS: linux, windows
     if is_macos():
         return f"{location}/Contents/Home"
-    elif is_windows():
-        pass
-    elif is_linux():
-        pass
     return location
 
 

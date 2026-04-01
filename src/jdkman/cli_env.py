@@ -5,10 +5,9 @@ import typer
 
 from .autocomplete import autocomplete_installed, autocomplete_aliases, autocomplete_managed
 from .config import is_dev
-from .console import log, out, table, MARK_CHECK, MARK_INVALID, st_emp, st_div, st_dim
+from .console import log, out, table, MARK_CHECK, MARK_WARNING, MARK_INVALID, st_emp, st_div, st_dim, st_not
 from .environments import set_env_file, unset_env_file, set_env_alias, unset_env_alias
-from .registry import get_aliases
-
+from .registry import get_managed
 
 app = typer.Typer()
 
@@ -130,9 +129,18 @@ def aliases():
     """
     log(f"aliases()")
 
-    tab = table("alias", "distro")
-    for alias, distro in get_aliases(sort=True).items():
-        tab.add_row(alias, distro)
+    managed = get_managed(sort=True, divided=True)
+    _installed = managed["installed"]
+    _aliases = managed["aliases"]
+    tab = table("alias", "distro", "version", "status")
+    for alias, distro in _aliases.items():
+        is_enabled = distro in _installed
+        tab.add_row(
+            alias,
+            is_enabled and distro or st_not(distro),
+            is_enabled and st_dim(_installed[distro]["version"]) or None,
+            is_enabled and MARK_CHECK or f"{MARK_WARNING} {st_dim('disbaled')}",
+        )
     out(tab if tab.row_count > 0
         else f"{MARK_CHECK} No JVM distribution aliases.")
 

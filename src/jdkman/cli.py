@@ -85,7 +85,8 @@ def ls():
         tab.add_row(
             slug,
             st_dim(managed_info["version"]),
-            slug not in _outdated and f"{MARK_CHECK} {st_dim('latest')}" or f"{MARK_WARNING} {st_dim('outdated')}",
+            slug not in _outdated and f"{MARK_CHECK} {st_dim('latest')}"
+                or f"{MARK_WARNING} {st_dim('outdated')}",
             st_dim(managed_info["location"])
         )
     out(tab if tab.row_count > 0

@@ -72,7 +72,7 @@ CONFIG_DIR = Path.home() / ".config" / APP_NAME
 LOCAL_ENV_FILE = ".java-version"
 GLOBAL_ENV_FILE = CONFIG_DIR / f"{LOCAL_ENV_FILE}.global"
 
-INSTALL_DIR = Path.home() / "Library/Java/JavaVirtualMachines" if is_macos() else Path.home() / ".jdk"
+INSTALL_DIR = Path.home() / ("Library/Java/JavaVirtualMachines" if is_macos() else ".jdk")
 MANAGED_JVM_DB = INSTALL_DIR / f".{APP_NAME}"
 
 #---------------------------------------------------------------------------------------------------

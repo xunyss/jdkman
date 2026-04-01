@@ -106,7 +106,7 @@ def get_aliases(sort: bool = False) -> dict[str, str]:
     return dict(sorted(aliases.items())) if sort else aliases
 
 
-def get_managed(sort: bool = False) -> dict[str, Any]:
+def get_managed(sort: bool = False, divided: bool = False) -> dict[str, Any]:
     log(f"get_managed()")
 
     managed = _read_managed()
@@ -117,6 +117,11 @@ def get_managed(sort: bool = False) -> dict[str, Any]:
         installed = dict(sorted(installed.items(), key=installed_sort_key))
         aliases = dict(sorted(aliases.items()))
 
+    if divided:
+        return {
+            "installed": installed,
+            "aliases": aliases,
+        }
     return installed | aliases
 
 

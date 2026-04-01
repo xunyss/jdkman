@@ -93,6 +93,9 @@ def st_dim(content: Any) -> str:
 def st_cod(content: Any) -> str:
     return f"[bold italic underline]{content}[/bold italic underline]"
 
+def st_not(content: Any) -> str:
+    return f"[strike dim]{content}[/strike dim]"
+
 
 def version_str() -> str:
     return f"""\

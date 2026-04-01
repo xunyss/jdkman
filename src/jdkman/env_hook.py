@@ -1,3 +1,4 @@
+# todo: env_hook.py -> C or Rust
 """
 jdk_hook - Standalone shell hook for jdkman auto JVM switching.
 Resolves a JVM slug to JAVA_HOME and outputs shell export commands.
@@ -15,12 +16,10 @@ def main():
         sys.exit(1)
 
     env_tag = sys.argv[1]
+    is_macos = platform.system() == "Darwin"
 
     # Mirror config.py path logic without importing it
-    if platform.system() == "Darwin":
-        install_dir = Path.home() / "Library/Java/JavaVirtualMachines"
-    else:
-        install_dir = Path.home() / ".jdk"
+    install_dir = Path.home() / ("Library/Java/JavaVirtualMachines" if is_macos else ".jdk")
 
     managed_db = install_dir / ".jdkman"
     if not managed_db.is_file():
@@ -40,7 +39,7 @@ def main():
         sys.exit(1)
 
     location = installed[env_tag]["location"]
-    java_home = f"{location}/Contents/Home" if platform.system() == "Darwin" else location
+    java_home = f"{location}/Contents/Home" if is_macos else location
 
     print(f'export JAVA_HOME="{java_home}"')
 

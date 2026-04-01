@@ -4,7 +4,7 @@ import typer
 
 from .autocomplete import autocomplete_installed
 from .config import is_macos
-from .console import out, log, table, MARK_CHECK, st_hig, st_dim, st_cod
+from .console import out, log, table, MARK_CHECK, st_hig, st_dim
 from .detect import exec_java_home
 from .mise import mise_link, mise_ls
 
@@ -20,14 +20,14 @@ if is_macos():
             "allow_extra_args": True,
             "ignore_unknown_options": True,
         },
-        help=f"""\
-            Show installed JVM home paths. (macOS only)
-            
-            Wraps /usr/libexec/java_home with identical options.
-            Run '{st_cod('jdk home -h')}' to see all available options.
-        """
     )
     def home(context: typer.Context):
+        """
+        Show installed JVM home paths. (macOS only)
+
+        Wraps /usr/libexec/java_home with identical options.
+        Run '[bold italic underline]jdk home -h[/bold italic underline]' to see all available options.
+        """
         log(f"home()")
         log(f"  context.args: {context.args}")
 
