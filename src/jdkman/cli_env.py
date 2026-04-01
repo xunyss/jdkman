@@ -67,6 +67,7 @@ def deactivate(
     print(script.read_text(), end="")
 
 
+@app.command(name="set", hidden=True, no_args_is_help=True)
 @app.command(rich_help_panel="Environments", no_args_is_help=True)
 def use(
         distro: Annotated[str, typer.Argument(
@@ -80,7 +81,7 @@ def use(
         )] = False,
 ):
     """
-    Set Java version for current directory or globally.
+    Set Java version for current directory or globally.  [dim]\\[aliases: set][/dim]
 
     Creates a .java-version file in the current directory (default),
     or ~/.config/jdkman/.java-version.global with --global.
@@ -97,6 +98,7 @@ def use(
     out(f"{MARK_CHECK} {'Global' if set_global else 'Local'} Java environment: {st_emp(distro)} {st_dim(env_file)}", highlight=False)
 
 
+@app.command(name="uns", hidden=True)
 @app.command(rich_help_panel="Environments")
 def unuse(
         set_global: Annotated[bool, typer.Option(
@@ -105,7 +107,7 @@ def unuse(
         )] = False,
 ):
     """
-    Clear Java version for current directory or globally.
+    Clear Java version for current directory or globally.  [dim]\\[aliases: uns][/dim]
 
     Empties the .java-version file in the current directory (default),
     or ~/.config/jdkman/.java-version.global with --global.

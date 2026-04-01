@@ -15,7 +15,7 @@ A command-line tool for installing and managing OpenJDK distributions.
 - [ ] java 실행시 /usr/bin/java 실항하게 하기 (shims)
 
 - [ ] jdk help 에서 version, help 다른 섹션으로 내리기
-- [ ] command alias
+- [x] command alias
 - [ ] query current applied jdk
 
 ```
