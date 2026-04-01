@@ -66,7 +66,7 @@ def fetch_releases() -> list[dict[str, Any]]:
 
     _group_keys = ("vendor", "image_type", "features", "jvm_impl", "java_version", "version")
     _dist_keys = ("file_type", "url", "checksum", "created_at")
-    releases: dict[tuple, dict] = {}
+    releases: dict[tuple, dict[str, Any]] = {}
     for artifact in fetch_artifacts():
         key = (artifact["vendor"], artifact["image_type"], tuple(sorted(artifact["features"])), artifact["jvm_impl"], artifact["java_version"], artifact["version"])
         if key not in releases:

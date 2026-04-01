@@ -93,33 +93,33 @@ def slug(
 
 
 @app.command()
-def installed():
+def installed(sort: Annotated[bool, typer.Option()] = False):
     """
     get_installed()
     """
     log(f"installed()")
 
-    out(get_installed())
+    out(get_installed(sort=sort))
 
 
 @app.command()
-def aliases():
+def aliases(sort: Annotated[bool, typer.Option()] = False):
     """
     get_aliases()
     """
     log(f"aliases()")
 
-    out(get_aliases())
+    out(get_aliases(sort=sort))
 
 
 @app.command()
-def managed():
+def managed(sort: Annotated[bool, typer.Option()] = False):
     """
     get_managed()
     """
     log(f"managed()")
 
-    out(get_managed(sort=True))
+    out(get_managed(sort=sort))
 
 
 @app.command()

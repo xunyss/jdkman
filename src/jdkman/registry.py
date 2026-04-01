@@ -98,7 +98,7 @@ def get_installed(sort: bool = False) -> dict[str, dict[str, Any]]:
     return dict(sorted(installed.items(), key=installed_sort_key)) if sort else installed
 
 
-def get_aliases(sort: bool = False) -> dict:
+def get_aliases(sort: bool = False) -> dict[str, str]:
     log(f"get_aliases()")
 
     managed = _read_managed()
@@ -106,12 +106,12 @@ def get_aliases(sort: bool = False) -> dict:
     return dict(sorted(aliases.items())) if sort else aliases
 
 
-def get_managed(sort: bool = False) -> dict:
+def get_managed(sort: bool = False) -> dict[str, Any]:
     log(f"get_managed()")
 
     managed = _read_managed()
-    installed = managed["installed"]
-    aliases = managed["aliases"]
+    installed: dict[str, Any] = managed["installed"]
+    aliases: dict[str, str] = managed["aliases"]
 
     if sort:
         installed = dict(sorted(installed.items(), key=installed_sort_key))
@@ -172,7 +172,7 @@ def get_slug(slug: str) -> dict[str, Any]:
         out(f"{MARK_INVALID} {st_div(slug)} is invalid!", highlight=False)
         raise typer.Exit(code=-1)
 
-    return slugs.get(slug)
+    return slugs[slug]
 
 
 def get_dist(slug: str, version: str | None = None) -> dict[str, Any]:
@@ -201,6 +201,9 @@ def cleanup_cache():
     log(f"cleanup_cache()")
 
     for cached in CACHE_DIR.iterdir():
-        shutil.rmtree(cached) if cached.is_dir() else cached.unlink()
+        if cached.is_dir():
+            shutil.rmtree(cached)
+        else:
+            cached.unlink()
         log(f"Remove: {cached}")
 

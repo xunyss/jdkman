@@ -15,7 +15,7 @@ def is_mise_enabled() -> bool:
     return shutil.which("mise") is not None
 
 
-def link_path(location: str):
+def link_path(location: str) -> str:
     # todo: impl other OS: linux, windows
     if is_macos():
         return f"{location}/Contents/Home"
@@ -23,7 +23,7 @@ def link_path(location: str):
         pass
     elif is_linux():
         pass
-    return None
+    return location
 
 
 def mise_ls() -> list[dict[str, Any]]:

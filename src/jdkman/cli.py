@@ -1,5 +1,5 @@
 import sys
-from typing import Annotated, cast
+from typing import Annotated
 
 import click
 import typer
@@ -313,6 +313,7 @@ def show_version(
     raise typer.Exit()
 
 
+# noinspection PyUnresolvedReferences
 @app.command(name="help")
 def show_help(
         context: typer.Context,
@@ -331,7 +332,7 @@ def show_help(
     """
     if command:
         ctx = context.parent
-        cmd = cast(click.Group, ctx.command).commands.get(command)
+        cmd = ctx.command.commands.get(command)
         if cmd is None:
             out(f"{MARK_INVALID} Unknown command: {st_div(command)}")
             raise typer.Exit(code=-1)

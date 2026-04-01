@@ -96,10 +96,10 @@ def st_cod(content: Any) -> str:
 
 def version_str() -> str:
     return f"""\
-[bold yellow]      _    ____[/bold yellow]
-[bold yellow]     (_)__/ / /__ __ _  ___  ___[/bold yellow]
-[bold yellow]    / / _  /  '_//  ' \/ _ `/ _ \\\[/bold yellow]
-[bold yellow] __/ /\\_,_/_/\\_\\/_/_/_/\\_,_/_//_/[/bold yellow]
-[bold yellow]|___/[/bold yellow]
+[bold yellow]      _    ____ [/bold yellow]
+[bold yellow]     (_)__/ / /__ __ _  ___  ___ [/bold yellow]
+[bold yellow]    / / _  /  '_//  ' \\/ _ `/ _ \\ [/bold yellow]
+[bold yellow] __/ /\\_,_/_/\\_\\/_/_/_/\\_,_/_//_/ [/bold yellow]
+[bold yellow]|___/ [/bold yellow]
        [cyan bold]{APP_VERSION}[/cyan bold] [dim]({platform_name()})[/dim]"""
 

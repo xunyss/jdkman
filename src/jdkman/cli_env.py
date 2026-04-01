@@ -2,11 +2,10 @@ from pathlib import Path
 from typing import Annotated
 
 import typer
-from rich.pretty import pretty_repr
 
 from .autocomplete import autocomplete_installed, autocomplete_aliases, autocomplete_managed
 from .config import is_dev
-from .console import log, out, MARK_CHECK, MARK_INVALID, st_emp, st_div, st_dim
+from .console import log, out, table, MARK_CHECK, MARK_INVALID, st_emp, st_div, st_dim
 from .environments import set_env_file, unset_env_file, set_env_alias, unset_env_alias
 from .registry import get_aliases
 
@@ -130,7 +129,12 @@ def aliases():
     -  jdk aliases
     """
     log(f"aliases()")
-    log(f"  aliases: {pretty_repr(get_aliases())}")
+
+    tab = table("alias", "distro")
+    for alias, distro in get_aliases(sort=True).items():
+        tab.add_row(alias, distro)
+    out(tab if tab.row_count > 0
+        else f"{MARK_CHECK} No JVM distribution aliases.")
 
 
 @app.command(name="alias", rich_help_panel="Environments", no_args_is_help=True)
@@ -179,4 +183,7 @@ def unset_alias(
 
     unset_env_alias(alias)
     out(f"{MARK_CHECK} Unalias: {st_emp(alias)}", highlight=False)
+
+
+# TODO: query current applied jdk
 

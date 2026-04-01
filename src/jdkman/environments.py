@@ -7,11 +7,11 @@ from .console import log, out, MARK_INVALID, st_emp, st_div
 from .registry import get_managed, get_installed, get_slug, add_aliases, get_aliases, del_aliases
 
 
-def find_env_file(is_global: bool) -> Path | str:
+def find_env_file(is_global: bool) -> Path:
     return GLOBAL_ENV_FILE if is_global else Path.cwd() / LOCAL_ENV_FILE
 
 
-def set_env_file(env_tag: str, is_global: bool = False) -> str:
+def set_env_file(env_tag: str, is_global: bool = False) -> Path:
     log(f"set_env_file()")
     log(f"  env_tag: {env_tag}")
     log(f"  is_global: {is_global}")
@@ -25,7 +25,7 @@ def set_env_file(env_tag: str, is_global: bool = False) -> str:
     return env_file
 
 
-def unset_env_file(is_global: bool = False) -> str:
+def unset_env_file(is_global: bool = False) -> Path:
     log(f"reset_env_file()")
     log(f"  is_global: {is_global}")
 

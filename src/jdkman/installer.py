@@ -94,6 +94,7 @@ def make_jvm_dir_name(slug_info: dict[str, Any]):
     if feature:
         parts.append(feature)
     parts.append(str(slug_info["major_version"]))
+    # noinspection PyTypeChecker
     return f"{'-'.join(parts)}.{slug_info['image_type']}"
 
 

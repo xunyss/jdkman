@@ -49,7 +49,6 @@ def is_linux():
 
 
 def is_dev() -> bool:
-    # noinspection PyBroadException
     try:
         dist = meta.distribution("jdkman")
         direct_url = dist.read_text("direct_url.json")
@@ -77,7 +76,6 @@ INSTALL_DIR = Path.home() / "Library/Java/JavaVirtualMachines" if is_macos() els
 MANAGED_JVM_DB = INSTALL_DIR / f".{APP_NAME}"
 
 #---------------------------------------------------------------------------------------------------
-# custom typer
 DISABLE_SUGGEST_OPTIONS = True
 CUSTOM_STYLE_HELP = True
 CUSTOM_STYLE_ERROR = True
