@@ -9,6 +9,7 @@ from .console import log, out, table, MARK_CHECK, MARK_WARNING, MARK_INVALID, st
 from .environments import set_env_file, unset_env_file, set_env_alias, unset_env_alias
 from .registry import get_managed
 
+
 app = typer.Typer()
 
 
@@ -119,32 +120,6 @@ def unuse(
     out(f"{MARK_CHECK} Cleared {'global' if set_global else 'local'} Java environment: {st_dim(env_file)}",  highlight=False)
 
 
-@app.command(rich_help_panel="Environments")
-def aliases():
-    """
-    List all JVM distribution aliases.
-
-    Examples:
-    -  jdk aliases
-    """
-    log(f"aliases()")
-
-    managed = get_managed(sort=True, divided=True)
-    _installed = managed["installed"]
-    _aliases = managed["aliases"]
-    tab = table("alias", "distro", "version", "status")
-    for alias, distro in _aliases.items():
-        is_enabled = distro in _installed
-        tab.add_row(
-            alias,
-            is_enabled and distro or st_not(distro),
-            is_enabled and st_dim(_installed[distro]["version"]) or None,
-            is_enabled and MARK_CHECK or f"{MARK_WARNING} {st_dim('disbaled')}",
-        )
-    out(tab if tab.row_count > 0
-        else f"{MARK_CHECK} No JVM distribution aliases.")
-
-
 @app.command(name="alias", rich_help_panel="Environments", no_args_is_help=True)
 def set_alias(
         alias: Annotated[str, typer.Argument(
@@ -193,5 +168,28 @@ def unset_alias(
     out(f"{MARK_CHECK} Unalias: {st_emp(alias)}", highlight=False)
 
 
-# TODO: query current applied jdk
+@app.command(rich_help_panel="Environments")
+def aliases():
+    """
+    List all JVM distribution aliases.
+
+    Examples:
+    -  jdk aliases
+    """
+    log(f"aliases()")
+
+    managed = get_managed(sort=True, divided=True)
+    _installed = managed["installed"]
+    _aliases = managed["aliases"]
+    tab = table("alias", "distro", "version", "status")
+    for alias, distro in _aliases.items():
+        is_enabled = distro in _installed
+        tab.add_row(
+            alias,
+            is_enabled and distro or st_not(distro),
+            is_enabled and st_dim(_installed[distro]["version"]) or None,
+            is_enabled and MARK_CHECK or f"{MARK_WARNING} {st_dim('disbaled')}",
+        )
+    out(tab if tab.row_count > 0
+        else f"{MARK_CHECK} No JVM distribution aliases.")
 

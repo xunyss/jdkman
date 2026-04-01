@@ -13,8 +13,10 @@ A command-line tool for installing and managing OpenJDK distributions.
 - [ ] 중복제거 - out(f"{MARK_INVALID} {st_emp(slug)} is not installed!", highlight=False)
 - [ ] convention - command 도움말, param 도움말, 변수명, 함수명
 - [ ] java 실행시 /usr/bin/java 실항하게 하기 (shims)
+
 - [ ] jdk help 에서 version, help 다른 섹션으로 내리기
 - [ ] command alias
+- [ ] query current applied jdk
 
 ```
 

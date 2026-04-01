@@ -4,15 +4,16 @@ from typing import Annotated
 import click
 import typer
 
-from .autocomplete import autocomplete_installed, autocomplete_slugs, autocomplete_commands
+from .autocomplete import autocomplete_installed, autocomplete_slugs
+from .cli_about import app as about_app, show_version
 from .cli_dev import app as dev_app
 from .cli_env import app as env_app
 from .cli_tools import app as tools_app
 from .config import is_dev, FORCE_VERBOSE, init_dirs
 from .console import (
     update_state, log, out, table,
-    MARK_CHECK, MARK_WARNING, MARK_INVALID,
-    st_emp, st_hig, st_div, st_dim, version_str
+    MARK_CHECK, MARK_WARNING,
+    st_emp, st_hig, st_dim
 )
 from .installer import install_jvm, uninstall_jvm, upgrade_jvm
 from .registry import list_vendors, get_slugs, get_outdated, cleanup_cache, get_installed, list_editions
@@ -34,8 +35,11 @@ if is_dev():
         dev_app,
         name="dev",
         help="for Development..",
-        rich_help_panel="Tools"
+        rich_help_panel="Tools",
     )
+app.add_typer(
+    about_app,
+)
 
 
 def intercept_args(value: bool):
@@ -70,7 +74,7 @@ def callback_verbose(value: bool):
 @app.command(hidden=True)
 def ls():
     """
-    List installed JVM distributions.  \\[aliases: ls]
+    List installed JVM distributions.  [dim]\\[aliases: ls][/dim]
 
     Examples:
     -  jdk list
@@ -93,11 +97,11 @@ def ls():
         else f"{MARK_CHECK} No installed JVM distributions.")
 
 
-@app.command(name="vendor", hidden=True)
+@app.command(name="vd", hidden=True)
 @app.command()
 def vendors():
     """
-    List all available JVM vendors.  \\[aliases: vendor]
+    List all available JVM vendors.  [dim]\\[aliases: vd][/dim]
 
     Examples:
     -  jdk vendors
@@ -112,11 +116,11 @@ def vendors():
     out(tab)
 
 
-@app.command(name="edition", hidden=True)
+@app.command(name="ed", hidden=True)
 @app.command()
 def editions():
     """
-    List all available JVM editions.  \\[aliases: edition]
+    List all available JVM editions.  [dim]\\[aliases: ed][/dim]
 
     Examples:
     -  jdk editions
@@ -131,7 +135,7 @@ def editions():
     out(tab)
 
 
-@app.command(name="search", hidden=True)
+@app.command(name="rl", hidden=True)
 @app.command()
 def remote(
         distro: Annotated[str, typer.Argument(
@@ -155,7 +159,7 @@ def remote(
         )] = None,
 ):
     """
-    List available JVM distributions.  \\[aliases: search]
+    List available JVM distributions.  [dim]\\[aliases: rl][/dim]
 
     Examples:
     -  jdk remote
@@ -188,11 +192,11 @@ def remote(
     out(tab)
 
 
-@app.command(name="old", hidden=True)
+@app.command(name="out", hidden=True)
 @app.command()
 def outdated():
     """
-    List outdated JVM distributions.  \\[aliases: old]
+    List outdated JVM distributions.  [dim]\\[aliases: out][/dim]
 
     Examples:
     -  jdk outdated
@@ -211,7 +215,6 @@ def outdated():
         else f"{MARK_CHECK} No outdated JVM distributions.")
 
 
-@app.command(name="setup", hidden=True, no_args_is_help=True)
 @app.command(name="add", hidden=True, no_args_is_help=True)
 @app.command(no_args_is_help=True)
 def install(
@@ -222,7 +225,7 @@ def install(
         )]
 ):
     """
-    Install a JVM distribution.  \\[aliases: setup, add]
+    Install a JVM distribution.  [dim]\\[aliases: add][/dim]
 
     Examples:
     -  jdk install zulu-21
@@ -235,8 +238,7 @@ def install(
     out(f"{MARK_CHECK} Installed: {st_emp(distro)} {st_dim(installed_dir)}", highlight=False)
 
 
-@app.command(name="remove", hidden=True, no_args_is_help=True)
-@app.command(name="rm", hidden=True, no_args_is_help=True)
+@app.command(name="del", hidden=True, no_args_is_help=True)
 @app.command(no_args_is_help=True)
 def uninstall(
         distro: Annotated[str, typer.Argument(
@@ -246,7 +248,7 @@ def uninstall(
         )]
 ):
     """
-    Remove an installed JVM distribution.  \\[aliases: remove, rm]
+    Remove an installed JVM distribution.  [dim]\\[aliases: del][/dim]
 
     Examples:
     -  jdk uninstall zulu-21
@@ -259,7 +261,7 @@ def uninstall(
     out(f"{MARK_CHECK} Uninstalled: {st_emp(distro)} {st_dim(uninstalled_dir)}", highlight=False)
 
 
-@app.command(name="update", hidden=True, no_args_is_help=True)
+@app.command(name="up", hidden=True, no_args_is_help=True)
 @app.command(no_args_is_help=True)
 def upgrade(
         distro: Annotated[str, typer.Argument(
@@ -269,7 +271,7 @@ def upgrade(
         )]
 ):
     """
-    Upgrade an installed JVM distribution.  [dim]\\[aliases: update][/dim]
+    Upgrade an installed JVM distribution.  [dim]\\[aliases: upd][/dim]
 
     Examples:
     -  jdk upgrade zulu-21
@@ -282,12 +284,11 @@ def upgrade(
     out(f"{MARK_CHECK} Upgraded: {st_emp(distro)} {st_dim(upgraded_dir)}", highlight=False)
 
 
-@app.command(name="clean", hidden=True)
-@app.command(name="clear", hidden=True)
+@app.command(name="cl", hidden=True)
 @app.command()
 def cleanup():
     """
-    Remove application cache data.  [dim]\\[aliases: clean, clear][/dim]
+    Remove application cache data.  [dim]\\[aliases: cl][/dim]
 
     Examples:
     -  jdk cleanup
@@ -296,51 +297,6 @@ def cleanup():
 
     cleanup_cache()
     out(f"{MARK_CHECK} Cache cleaned.")
-
-
-@app.command(name="version", add_help_option=False)
-def show_version(
-        callback: Annotated[bool, typer.Option(
-            hidden=True
-        )] = False
-):
-    """
-    Show the version and exit.
-    """
-    log(f"version()")
-    log(f"  callback: {callback}")
-
-    out(version_str())
-    raise typer.Exit()
-
-
-# noinspection PyUnresolvedReferences
-@app.command(name="help")
-def show_help(
-        context: typer.Context,
-        command: Annotated[str | None, typer.Argument(
-            help="Command to show help for.",
-            autocompletion=autocomplete_commands
-        )] = None
-):
-    """
-    Show help for a command.
-
-    Examples:
-    -  jdk help
-    -  jdk help list
-    -  jdk help install
-    """
-    if command:
-        ctx = context.parent
-        cmd = ctx.command.commands.get(command)
-        if cmd is None:
-            out(f"{MARK_INVALID} Unknown command: {st_div(command)}")
-            raise typer.Exit(code=-1)
-        with click.Context(cmd, info_name=command, parent=ctx) as sub_ctx:
-            cmd.get_help(sub_ctx)
-    else:
-        context.parent.get_help()
 
 
 @app.callback(
