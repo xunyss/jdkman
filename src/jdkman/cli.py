@@ -16,7 +16,7 @@ from .console import (
     st_emp, st_hig, st_dim
 )
 from .installer import install_jvm, uninstall_jvm, upgrade_jvm
-from .registry import list_vendors, get_slugs, get_outdated, cleanup_cache, get_installed, list_editions
+from .registry import list_vendors, get_slugs, get_outdated, get_installed, list_editions
 
 
 app = typer.Typer(
@@ -70,7 +70,7 @@ def callback_verbose(value: bool):
     log(f"  verbose: {value}")
 
 
-@app.command(name="list")
+@app.command(name="list", rich_help_panel="Managements")
 @app.command(hidden=True)
 def ls():
     """
@@ -98,7 +98,7 @@ def ls():
 
 
 @app.command(name="vd", hidden=True)
-@app.command()
+@app.command(rich_help_panel="Managements")
 def vendors():
     """
     List all available JVM vendors.  [dim]\\[aliases: vd][/dim]
@@ -117,7 +117,7 @@ def vendors():
 
 
 @app.command(name="ed", hidden=True)
-@app.command()
+@app.command(rich_help_panel="Managements")
 def editions():
     """
     List all available JVM editions.  [dim]\\[aliases: ed][/dim]
@@ -136,7 +136,7 @@ def editions():
 
 
 @app.command(name="rl", hidden=True)
-@app.command()
+@app.command(rich_help_panel="Managements")
 def remote(
         distro: Annotated[str, typer.Argument(
             help="Filter by distro. (e.g. zulu-21, temurin, ora)"
@@ -193,7 +193,7 @@ def remote(
 
 
 @app.command(name="out", hidden=True)
-@app.command()
+@app.command(rich_help_panel="Managements")
 def outdated():
     """
     List outdated JVM distributions.  [dim]\\[aliases: out][/dim]
@@ -216,7 +216,7 @@ def outdated():
 
 
 @app.command(name="add", hidden=True, no_args_is_help=True)
-@app.command(no_args_is_help=True)
+@app.command(rich_help_panel="Managements", no_args_is_help=True)
 def install(
         distro: Annotated[str, typer.Argument(
             metavar="<DISTRO>",
@@ -239,7 +239,7 @@ def install(
 
 
 @app.command(name="del", hidden=True, no_args_is_help=True)
-@app.command(no_args_is_help=True)
+@app.command(rich_help_panel="Managements", no_args_is_help=True)
 def uninstall(
         distro: Annotated[str, typer.Argument(
             metavar="<DISTRO>",
@@ -262,7 +262,7 @@ def uninstall(
 
 
 @app.command(name="up", hidden=True, no_args_is_help=True)
-@app.command(no_args_is_help=True)
+@app.command(rich_help_panel="Managements", no_args_is_help=True)
 def upgrade(
         distro: Annotated[str, typer.Argument(
             metavar="<DISTRO>",
@@ -282,21 +282,6 @@ def upgrade(
 
     upgraded_dir = upgrade_jvm(distro)
     out(f"{MARK_CHECK} Upgraded: {st_emp(distro)} {st_dim(upgraded_dir)}", highlight=False)
-
-
-@app.command(name="cl", hidden=True)
-@app.command()
-def cleanup():
-    """
-    Remove application cache data.  [dim]\\[aliases: cl][/dim]
-
-    Examples:
-    -  jdk cleanup
-    """
-    log(f"cleanup()")
-
-    cleanup_cache()
-    out(f"{MARK_CHECK} Cache cleaned.")
 
 
 @app.callback(
@@ -325,13 +310,22 @@ def main(
     """
     A command-line tool for installing and managing OpenJDK distributions.
 
-    Examples:
+    Managements Examples:
     -  jdk remote zulu        Search available JVM distributions
     -  jdk install zulu-21    Install a JVM distribution
     -  jdk list               List installed JVM distributions
     -  jdk outdated           List outdated JVM distributions
     -  jdk upgrade zulu-21    Upgrade an installed JVM distribution
     -  jdk uninstall zulu-21  Remove an installed JVM distribution
+
+    Environments Examples:
+    -  eval "$(jdk activate zsh)"  Enable auto JVM switching on directory change
+    -  jdk alias 21 zulu-21        Create alias '21' pointing to zulu-21
+    -  jdk aliases                 List all aliases
+    -  jdk use 21                  Set Java version for current directory
+    -  jdk use --global zulu-25    Set global fallback Java version
+    -  jdk unuse                   Clear Java version for current directory
+    -  jdk unalias 21              Remove alias '21'
     """
     log(f"main()")
     log(f"  context.args: {context.args}")

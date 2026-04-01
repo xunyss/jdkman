@@ -7,9 +7,25 @@ from .config import is_macos
 from .console import out, log, table, MARK_CHECK, st_hig, st_dim
 from .detect import exec_java_home
 from .mise import mise_link, mise_ls
+from .registry import cleanup_cache
 
 
 app = typer.Typer()
+
+
+@app.command(name="cl", hidden=True)
+@app.command(rich_help_panel="Tools")
+def cleanup():
+    """
+    Remove application cache data.  [dim]\\[aliases: cl][/dim]
+
+    Examples:
+    -  jdk cleanup
+    """
+    log(f"cleanup()")
+
+    cleanup_cache()
+    out(f"{MARK_CHECK} Cache cleaned.")
 
 
 if is_macos():
