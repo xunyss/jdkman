@@ -1,26 +1,12 @@
 # jdkman
 
-A command-line tool for installing and managing OpenJDK distributions.
+A command-line tool for installing, managing, and switching OpenJDK distributions.
 
 ---
 
-## TODO: version 0.3.0
-- [x] Add support for macOS
-- [ ] Add support for Windows
-- [ ] Add support for Linux
-- [ ] Update tests
-- [ ] rich - to standard colors
-- [ ] 중복제거 - out(f"{MARK_INVALID} {st_emp(slug)} is not installed!", highlight=False)
-- [ ] convention - command 도움말, param 도움말, 변수명, 함수명
-- [ ] java 실행시 /usr/bin/java 실항하게 하기 (shims)
-
-- [ ] jdk help 에서 version, help 다른 섹션으로 내리기
-- [x] command alias
-- [x] query current applied jdk
-
-```
-
 ## Why jdkman?
+
+### JDK Management — Simple by Design
 
 How often do you actually need to pick between `21.0.3` and `21.0.5`?
 Probably never. "The latest Zulu 21" is almost always good enough.
@@ -36,6 +22,20 @@ No scrolling through minor version lists. No patch versions piling up.
 On macOS, JDKs are installed under `~/Library/Java/JavaVirtualMachines/` — the standard
 path where Gradle, IntelliJ, and most other tools automatically look for JDKs.
 No extra configuration needed.
+
+### Per-Project Java Environment Switching — Like jenv, But Integrated
+
+Beyond managing installations, jdkman also handles per-project Java environment switching,
+just like [jenv](https://www.jenv.be/).
+
+- Set a Java version per directory with `jdk use zulu-21`
+- A `.java-version` file is created in the current directory — **fully compatible with jenv**
+- `JAVA_HOME` is automatically switched as you `cd` between projects
+- Falls back to a global setting when no local `.java-version` is found
+- Create short aliases like `jdk alias 21 zulu-21` for convenience
+
+Since jdkman uses the same `.java-version` file format as jenv, you can adopt jdkman
+in a team that already uses jenv — both tools will pick up the same file.
 
 ---
 
@@ -71,9 +71,40 @@ jdk outdated
 
 ---
 
+## Shell Integration (Auto Environment Switching)
+
+To enable automatic `JAVA_HOME` switching when you change directories, add the following
+to your shell configuration file.
+
+**zsh** (`~/.zshrc`):
+
+```zsh
+eval "$(jdk activate zsh)"
+```
+
+**bash** (`~/.bashrc` or `~/.bash_profile`):
+
+```bash
+eval "$(jdk activate bash)"
+```
+
+**fish** (`~/.config/fish/config.fish`):
+
+```fish
+jdk activate fish | source
+```
+
+Once activated, jdkman reads the `.java-version` file in your current directory (or any
+parent directory) and sets `JAVA_HOME` automatically. If no local file is found, it falls
+back to the global setting configured with `jdk use --global`.
+
+---
+
 ## Commands
 
-### `jdk remote [DISTRO]`
+### Management
+
+#### `jdk remote [DISTRO]`
 
 Browse JDK distributions available for download.
 
@@ -100,7 +131,7 @@ jdk remote --all zulu         # Combined: all build types, zulu only
 
 ---
 
-### `jdk install <DISTRO>`
+#### `jdk install <DISTRO>`
 
 Download and install a JDK distribution.
 
@@ -122,7 +153,7 @@ Use `jdk remote` to find the exact distribution name.
 
 ---
 
-### `jdk list`
+#### `jdk list`
 
 Show all installed JDK distributions managed by jdkman.
 
@@ -133,30 +164,29 @@ jdk ls      # alias
 
 ---
 
-### `jdk uninstall <DISTRO>`
+#### `jdk uninstall <DISTRO>`
 
 Remove an installed JDK distribution.
 
 ```bash
 jdk uninstall zulu-21
-jdk remove zulu-21    # alias
 jdk rm zulu-21        # alias
 ```
 
 ---
 
-### `jdk upgrade <DISTRO>`
+#### `jdk upgrade <DISTRO>`
 
 Upgrade an installed distribution to the latest patch version.
 
 ```bash
 jdk upgrade zulu-21
-jdk update zulu-21    # alias
+jdk up zulu-21        # alias
 ```
 
 ---
 
-### `jdk outdated`
+#### `jdk outdated`
 
 List installed distributions that have newer versions available.
 
@@ -166,7 +196,7 @@ jdk outdated
 
 ---
 
-### `jdk vendors`
+#### `jdk vendors`
 
 List all available JDK vendors.
 
@@ -177,7 +207,115 @@ jdk vendor    # alias
 
 ---
 
-### `jdk cleanup`
+#### `jdk editions`
+
+List all available JDK editions (vendor + feature combinations).
+
+```bash
+jdk editions
+jdk edition    # alias
+```
+
+---
+
+### Environment
+
+#### `jdk use <DISTRO|ALIAS>`
+
+Set the Java environment for the current directory.
+Creates a `.java-version` file in the current directory.
+
+```bash
+jdk use zulu-21           # Set local (current directory)
+jdk use 21                # Use an alias
+jdk use zulu-21 --global  # Set global fallback (~/.config/jdkman/.java-version)
+```
+
+The `.java-version` file format is compatible with jenv.
+
+---
+
+#### `jdk unuse`
+
+Clear the Java environment for the current directory or globally.
+
+```bash
+jdk unuse           # Remove local .java-version
+jdk unuse --global  # Clear global setting
+```
+
+---
+
+#### `jdk env`
+
+Show the currently active Java environment and where it comes from.
+
+```bash
+jdk env
+```
+
+Displays the active distribution, version, scope (local/global), and the source `.java-version` file path.
+
+---
+
+#### `jdk alias <ALIAS> <DISTRO>`
+
+Create a short alias for an installed distribution.
+
+```bash
+jdk alias 21 zulu-21       # Use "21" instead of "zulu-21"
+jdk alias lts temurin-21
+```
+
+---
+
+#### `jdk unalias <ALIAS>`
+
+Remove an alias.
+
+```bash
+jdk unalias 21
+```
+
+---
+
+#### `jdk aliases`
+
+List all defined aliases and their status.
+
+```bash
+jdk aliases
+```
+
+---
+
+#### `jdk activate <SHELL>`
+
+Print the shell integration script that enables auto-switching.
+
+```bash
+eval "$(jdk activate zsh)"   # Add to ~/.zshrc
+eval "$(jdk activate bash)"  # Add to ~/.bashrc
+jdk activate fish | source   # Add to ~/.config/fish/config.fish
+```
+
+---
+
+#### `jdk deactivate <SHELL>`
+
+Remove the shell integration (auto-switching).
+
+```bash
+jdk deactivate zsh
+jdk deactivate bash
+jdk deactivate fish
+```
+
+---
+
+### Tools
+
+#### `jdk cleanup`
 
 Remove cached data (downloaded archives and catalog cache).
 
@@ -189,7 +327,7 @@ jdk clear     # alias
 
 ---
 
-### `jdk home` *(macOS only)*
+#### `jdk home` *(macOS only)*
 
 Show Java home paths for JVMs registered with the system.
 
@@ -200,7 +338,20 @@ jdk home --json    # Show detailed info in JSON format
 
 ---
 
-### `jdk version`
+#### `jdk mise [DISTRO]`
+
+List or register JVM distributions as mise java tools.
+
+```bash
+jdk mise             # List current mise java tools
+jdk mise zulu-21     # Register a distribution as a mise java tool
+```
+
+---
+
+### About
+
+#### `jdk version`
 
 Show the jdkman version.
 
@@ -209,6 +360,27 @@ jdk version
 jdk --version
 jdk -v
 ```
+
+---
+
+## How Per-Project Switching Works
+
+1. Add `eval "$(jdk activate zsh)"` (or bash, or `jdk activate fish | source` for fish) to your shell config.
+2. Run `jdk use zulu-21` in a project directory — this creates a `.java-version` file.
+3. Every time you `cd` into that directory (or any subdirectory), jdkman reads the nearest
+   `.java-version` upward and sets `JAVA_HOME` automatically.
+4. When you leave the directory, the global setting (or none) takes effect.
+
+```
+~/projects/
+├── service-a/
+│   └── .java-version   → "zulu-21"   → JAVA_HOME = zulu-21 path
+└── legacy-app/
+    └── .java-version   → "temurin-17" → JAVA_HOME = temurin-17 path
+```
+
+The `.java-version` file is a plain text file containing the distribution slug or alias.
+Because it uses the same format as jenv, teams can mix jdkman and jenv users without conflict.
 
 ---
 

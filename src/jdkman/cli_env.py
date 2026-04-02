@@ -32,6 +32,7 @@ def activate(
     Add to your shell profile (~/.zshrc or ~/.bashrc):
     -  eval "$(jdk activate zsh)"
     -  eval "$(jdk activate bash)"
+    -  jdk activate fish | source
     """
     log(f"activate()")
     log(f"  shell: {shell}")

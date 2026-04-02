@@ -8,6 +8,7 @@ from .console import log, out, MARK_INVALID, st_div
 from .registry import get_managed, get_installed, get_installed_slug, get_slug, add_aliases, get_aliases, del_aliases
 
 
+# todo: java -> /usr/bin/java (shims: by java() shell function)
 def print_activate_script(shell: str, dev_mode: bool = False):
     log(f"print_activate_script()")
 

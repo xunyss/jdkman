@@ -1,0 +1,50 @@
+set -gx _JDKMAN_SHELL fish
+set -gx _JDKMAN_ORIG_PATH $PATH
+set -g _JDKMAN_CURRENT_ENV_TAG ""
+
+function jdk
+    switch "$argv[1]"
+        case deactivate
+            if not contains -- --help $argv; and not contains -- -h $argv
+                set -l _shell $_JDKMAN_SHELL
+                if test (count $argv) -ge 2
+                    set _shell $argv[2]
+                end
+                eval (command jdk deactivate $_shell)
+            else
+                command jdk $argv
+            end
+        case '*'
+            command jdk $argv
+    end
+end
+
+function _jdkman_find_env_tag
+    set -l dir $PWD
+    while test "$dir" != "/"
+        if test -f "$dir/.java-version"
+            set -l content (string trim -- (cat "$dir/.java-version"))
+            if test -n "$content"
+                echo $content
+                return
+            end
+        end
+        set dir (dirname $dir)
+    end
+    if test -f "$HOME/.config/jdkman/.java-version"
+        string trim -- (cat "$HOME/.config/jdkman/.java-version")
+    end
+end
+
+function _jdkman_hook --on-event fish_prompt
+    set -l env_tag (_jdkman_find_env_tag)
+    if test "$env_tag" = "$_JDKMAN_CURRENT_ENV_TAG"
+        return
+    end
+    set -g _JDKMAN_CURRENT_ENV_TAG $env_tag
+    if test -n "$env_tag"
+        eval (command jdk hook-env $env_tag 2>/dev/null)
+    else
+        set -e JAVA_HOME
+    end
+end

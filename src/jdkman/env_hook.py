@@ -6,6 +6,7 @@ Resolves a JVM slug to JAVA_HOME and outputs shell export commands.
 Kept intentionally dependency-free (stdlib only) for fast startup.
 """
 import json
+import os
 import platform
 import sys
 from pathlib import Path
@@ -40,7 +41,10 @@ def main():
 
     location = installed[env_tag]["location"]
     java_home = f"{location}/Contents/Home" if is_macos else location
-    print(f'export JAVA_HOME="{java_home}"')
+    if os.environ.get("_JDKMAN_SHELL") == "fish":
+        print(f'set -gx JAVA_HOME "{java_home}"')
+    else:
+        print(f'export JAVA_HOME="{java_home}"')
 
 
 if __name__ == "__main__":

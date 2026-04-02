@@ -1,7 +1,13 @@
+import hashlib
+import tarfile
+from pathlib import Path
+
 import pytest
 
-from jdkman.utils import version_key
+from jdkman.utils import version_key, sha256_file, shorten, remove_letters, extract_archive
 
+
+# ── version_key ───────────────────────────────────────────────────────────────
 
 @pytest.mark.parametrize("version, expected", [
     # 순수 점(.) 구분 버전
@@ -62,3 +68,87 @@ def test_version_key_stable_sorts_after_prerelease():
     prerelease = "23.0.1+11_openj9-0.49.0-m2"
     assert version_key(prerelease) < version_key(stable)
 
+
+# ── sha256_file ───────────────────────────────────────────────────────────────
+
+def test_sha256_file_known_hash(tmp_path):
+    content = b"hello jdkman"
+    f = tmp_path / "test.bin"
+    f.write_bytes(content)
+    expected = hashlib.sha256(content).hexdigest()
+    assert sha256_file(f) == expected
+
+
+def test_sha256_file_empty(tmp_path):
+    f = tmp_path / "empty.bin"
+    f.write_bytes(b"")
+    expected = hashlib.sha256(b"").hexdigest()
+    assert sha256_file(f) == expected
+
+
+def test_sha256_file_large_file(tmp_path):
+    # chunk 경계를 넘는 크기 (2MB)
+    content = b"x" * (2 * 1024 * 1024 + 7)
+    f = tmp_path / "large.bin"
+    f.write_bytes(content)
+    expected = hashlib.sha256(content).hexdigest()
+    assert sha256_file(f) == expected
+
+
+# ── shorten ───────────────────────────────────────────────────────────────────
+
+def test_shorten_home_relative(tmp_path, monkeypatch):
+    monkeypatch.setattr(Path, "home", staticmethod(lambda: tmp_path))
+    target = tmp_path / "some" / "path"
+    assert shorten(target) == "~/some/path"
+
+
+def test_shorten_non_home_path():
+    p = Path("/etc/hosts")
+    assert shorten(p) == "/etc/hosts"
+
+
+def test_shorten_none():
+    assert shorten(None) is None
+
+
+# ── remove_letters ────────────────────────────────────────────────────────────
+
+@pytest.mark.parametrize("text, expected", [
+    ("17.0.3",       "17.0.3"),
+    ("21.0.5+11",    "21.0.5+11"),
+    ("8u392",        "8392"),
+    ("abc",          ""),
+    ("v21",          "21"),
+    ("LTS",          ""),
+    ("21.LTS",       "21."),
+    ("",             ""),
+])
+def test_remove_letters(text, expected):
+    assert remove_letters(text) == expected
+
+
+# ── extract_archive ───────────────────────────────────────────────────────────
+
+def test_extract_archive_tar_gz(tmp_path):
+    # 작은 tar.gz 아카이브 생성
+    src = tmp_path / "src"
+    src.mkdir()
+    (src / "hello.txt").write_text("world")
+
+    archive = tmp_path / "test.tar.gz"
+    with tarfile.open(archive, "w:gz") as tar:
+        tar.add(src / "hello.txt", arcname="hello.txt")
+
+    out_dir = tmp_path / "extracted"
+    out_dir.mkdir()
+    extract_archive(archive, out_dir)
+
+    assert (out_dir / "hello.txt").read_text() == "world"
+
+
+def test_extract_archive_unsupported_format(tmp_path):
+    archive = tmp_path / "test.zip"
+    archive.write_bytes(b"PK\x03\x04")  # zip magic bytes
+    with pytest.raises(ValueError, match="Unsupported archive format"):
+        extract_archive(archive, tmp_path)
