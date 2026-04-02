@@ -13,13 +13,17 @@ from .console import log, out, MARK_INVALID, st_div
 from .utils import version_key
 
 
+_managed_cache: dict[str, dict[str, Any]] = None
+
 def _read_managed() -> dict[str, dict[str, Any]]:
+    if _managed_cache:
+        return _managed_cache
     if MANAGED_JVM_DB.is_file():
         return json.loads(MANAGED_JVM_DB.read_text())
     return _write_managed({})
 
-
 def _write_managed(managed: dict[str, dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    _managed_cache = managed
     MANAGED_JVM_DB.write_text(json.dumps(managed))
     return managed
 
@@ -125,6 +129,18 @@ def get_managed(sort: bool = False, divided: bool = False) -> dict[str, Any]:
     return installed | aliases
 
 
+def get_installed_slug(slug: str):
+    log(f"get_installed_slug()")
+    log(f"  slug: {slug}")
+
+    installed = get_installed()
+    if slug not in installed:
+        out(f"{MARK_INVALID} {st_emp(slug)} is not installed!", highlight=False)
+        raise typer.Exit(code=-1)
+
+    return installed[slug]
+
+
 def get_outdated() -> dict[str, dict[str, Any]]:
     log(f"get_outdated()")
 
@@ -171,7 +187,6 @@ def get_slug(slug: str) -> dict[str, Any]:
     log(f"get_slug()")
     log(f"  slug: {slug}")
 
-    # TODO: validation 위치 검토
     slugs = fetch_slugs()
     if slug not in slugs:
         out(f"{MARK_INVALID} {st_div(slug)} is invalid!", highlight=False)

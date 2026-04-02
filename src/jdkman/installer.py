@@ -9,7 +9,7 @@ from rich.progress import Progress, BarColumn, DownloadColumn, TransferSpeedColu
 
 from .config import CACHE_DIR, INSTALL_DIR, CLEAN_WORK_DIR, is_macos
 from .console import log, out, MARK_ARROW, MARK_INVALID, MARK_CHECK, st_emp, st_div, st_dim
-from .registry import add_installed, del_installed, get_installed, get_outdated, get_slug, get_dist
+from .registry import add_installed, del_installed, get_installed, get_installed_slug, get_outdated, get_slug, get_dist
 from .utils import extract_archive, sha256_file
 
 
@@ -155,13 +155,10 @@ def uninstall_jvm(slug: str) -> Path:
     get_slug(slug)
 
     # validate installed
-    installed = get_installed()
-    if slug not in installed:
-        out(f"{MARK_INVALID} {st_emp(slug)} is not installed!", highlight=False)
-        raise typer.Exit(code=-1)
+    installed_info = get_installed_slug(slug)
 
     # delete jvm location
-    jvm_location = installed[slug]["location"]
+    jvm_location = installed_info["location"]
     shutil.rmtree(Path(jvm_location), ignore_errors=True)
 
     # update managed["installed"]
@@ -179,9 +176,7 @@ def upgrade_jvm(slug: str) -> Path:
     get_slug(slug)
 
     # validate installed
-    if slug not in get_installed():
-        out(f"{MARK_INVALID} {st_emp(slug)} is not installed!", highlight=False)
-        raise typer.Exit(code=-1)
+    get_installed_slug(slug)
 
     # validate outdated
     if slug not in get_outdated():

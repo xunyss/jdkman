@@ -6,13 +6,15 @@ from typing import Any
 import typer
 
 from .config import is_macos
-from .console import out, MARK_INVALID, log, st_emp, st_div, st_dim
-from .registry import get_installed, get_slug
+from .console import log, out, MARK_INVALID, st_div, st_dim
+from .registry import get_installed_slug, get_slug
 
 
-def is_mise_enabled() -> bool:
+def validate_mise_installed():
     # noinspection PyDeprecation
-    return shutil.which("mise") is not None
+    if not shutil.which("mise"):
+        out(f"{MARK_INVALID} {st_div('mise')} is not installed!", highlight=False)
+        raise typer.Exit(code=-1)
 
 
 def link_path(location: str) -> str:
@@ -34,21 +36,16 @@ def mise_link(slug: str) -> list[dict[str, Any]]:
     log(f"mise_link()")
     log(f"  slug: {slug}")
 
-    # check mise installed
-    if not is_mise_enabled():
-        out(f"{MARK_INVALID} {st_div('mise')} is not installed!", highlight=False)
-        raise typer.Exit(code=-1)
+    # validate mise installed
+    validate_mise_installed()
 
     # validate slug
     get_slug(slug)
 
     # validate installed
-    installed = get_installed()
-    if slug not in installed:
-        out(f"{MARK_INVALID} {st_emp(slug)} is not installed!", highlight=False)
-        raise typer.Exit(code=-1)
+    installed_info = get_installed_slug(slug)
 
-    command = ["mise", "link", f"java@{slug}", link_path(installed[slug]["location"])]
+    command = ["mise", "link", f"java@{slug}", link_path(installed_info["location"])]
     result = subprocess.run(command, capture_output=True, text=True)
     if result.stderr:
         out(f"{MARK_INVALID} {st_dim(result.stderr)}", highlight=False)

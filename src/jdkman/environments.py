@@ -4,8 +4,8 @@ from typing import Any
 import typer
 
 from .config import GLOBAL_ENV_FILE, LOCAL_ENV_FILE
-from .console import log, out, MARK_INVALID, st_emp, st_div
-from .registry import get_managed, get_installed, get_slug, add_aliases, get_aliases, del_aliases
+from .console import log, out, MARK_INVALID, st_div
+from .registry import get_managed, get_installed, get_installed_slug, get_slug, add_aliases, get_aliases, del_aliases
 
 
 def print_activate_script(shell: str, dev_mode: bool = False):
@@ -134,9 +134,7 @@ def set_env_alias(alias: str, slug: str):
     get_slug(slug)
 
     # validate installed
-    if slug not in installed:
-        out(f"{MARK_INVALID} {st_emp(slug)} is not installed!", highlight=False)
-        raise typer.Exit(code=-1)
+    get_installed_slug(slug)
 
     add_aliases(alias, slug)
 
