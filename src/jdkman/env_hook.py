@@ -43,8 +43,13 @@ def main():
     java_home = f"{location}/Contents/Home" if is_macos else location
     if os.environ.get("_JDKMAN_SHELL") == "fish":
         print(f'set -gx JAVA_HOME "{java_home}"')
+        if not is_macos:
+            print(f'set -gx PATH "{java_home}/bin" $_JDKMAN_ORIG_PATH')
     else:
         print(f'export JAVA_HOME="{java_home}"')
+        if not is_macos:
+            orig_path = os.environ.get("_JDKMAN_ORIG_PATH", "")
+            print(f'export PATH="{java_home}/bin:{orig_path}"')
 
 
 if __name__ == "__main__":

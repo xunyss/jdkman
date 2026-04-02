@@ -1,5 +1,5 @@
 export _JDKMAN_SHELL=zsh
-export _JDKMAN_ORIG_PATH="$PATH"
+[[ "$(uname -s)" != "Darwin" ]] && export _JDKMAN_ORIG_PATH="$PATH"
 _JDKMAN_CURRENT_ENV_TAG=""
 
 jdk() {
@@ -45,6 +45,7 @@ _jdkman_hook() {
     echo "$(jdk hook-env "$env_tag" 2>/dev/null)"
   else
     unset JAVA_HOME
+    [[ -n "${_JDKMAN_ORIG_PATH+x}" ]] && export PATH="$_JDKMAN_ORIG_PATH"
   fi
 }
 

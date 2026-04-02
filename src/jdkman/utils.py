@@ -94,10 +94,13 @@ def remove_letters(text: str) -> str:
     return re.sub(r"[A-Za-z]", "", text).strip()
 
 
-def shorten(path: Path) -> str | None:
+def shorten(path: Path | str) -> str | None:
     if path is None:
         return None
     try:
+        if isinstance(path, str):
+            path = Path(path)
+        # noinspection PyUnresolvedReferences
         return "~/" + str(path.relative_to(Path.home()))
     except ValueError:
         return str(path)

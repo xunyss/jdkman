@@ -1,3 +1,6 @@
+if set -q _JDKMAN_ORIG_PATH
+    set -gx PATH $_JDKMAN_ORIG_PATH
+end
 set -e JAVA_HOME
 set -e _JDKMAN_SHELL
 set -e _JDKMAN_ORIG_PATH

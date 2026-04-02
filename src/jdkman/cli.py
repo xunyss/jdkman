@@ -17,6 +17,7 @@ from .console import (
 )
 from .installer import install_jvm, uninstall_jvm, upgrade_jvm
 from .registry import get_installed, get_outdated, list_vendors, list_editions, get_slugs
+from .utils import shorten
 
 
 app = typer.Typer(
@@ -91,7 +92,7 @@ def ls():
             st_dim(managed_info["version"]),
             slug not in _outdated and f"{MARK_CHECK} {st_dim('latest')}"
                 or f"{MARK_WARNING} {st_dim('outdated')}",
-            st_dim(managed_info["location"])
+            st_dim(shorten(managed_info["location"]))
         )
     out(tab if tab.row_count > 0
         else f"{MARK_CHECK} No installed JVM distributions.")
