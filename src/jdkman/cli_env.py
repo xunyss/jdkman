@@ -72,7 +72,7 @@ def env():
     """
     log(f"env()")
 
-    envs = get_envs()
+    envs = get_envs(validate=True)
     active_scope = "local" if envs["local"]["version"] else "global" if envs["global"]["version"] else None
     if not active_scope:
         out(f"{MARK_CHECK} No activate Java environment.")

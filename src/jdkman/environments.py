@@ -1,10 +1,11 @@
+import os
 from pathlib import Path
 from typing import Any
 
 import typer
 
 from .config import GLOBAL_ENV_FILE, LOCAL_ENV_FILE
-from .console import log, out, MARK_INVALID, st_div
+from .console import log, out, MARK_INVALID, st_div, st_cod
 from .registry import get_managed, get_installed, get_installed_slug, get_slug, add_aliases, get_aliases, del_aliases
 
 
@@ -30,6 +31,10 @@ def print_deactivate_script(shell: str):
         raise typer.Exit(code=-1)
 
     print(script.read_text(), end="")
+
+
+def is_activated() -> bool:
+    return bool(os.environ.get("_JDKMAN_SHELL"))
 
 
 def find_env_file(is_global: bool) -> Path:
@@ -102,10 +107,16 @@ def get_env_tag() -> dict[str, dict[str, Any]]:
     }
 
 
-def get_envs() -> dict[str, dict[str, Any]]:
+def get_envs(validate: bool = False) -> dict[str, dict[str, Any]]:
     log(f"get_env()")
+    log(f"  validate: {validate}")
 
-    # 현재 shell 에 activate 되어 있는지 일단 확인 필요
+    if validate and not is_activated():
+        example = 'eval "$(jdk activate zsh)"'
+        out(f"{MARK_INVALID} {st_div('jdk')} is not activated in this shell session.\n"
+            f"Run {st_cod(example)} (or bash/fish) to enable auto-switching.", highlight=False)
+        raise typer.Exit(code=-1)
+
     managed = get_managed(sort=False, divided=True)
     installed = managed["installed"]
     aliases = managed["aliases"]
