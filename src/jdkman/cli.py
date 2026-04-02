@@ -16,7 +16,7 @@ from .console import (
     st_emp, st_hig, st_dim
 )
 from .installer import install_jvm, uninstall_jvm, upgrade_jvm
-from .registry import list_vendors, get_slugs, get_outdated, get_installed, list_editions
+from .registry import get_installed, get_outdated, list_vendors, list_editions, get_slugs
 
 
 app = typer.Typer(
@@ -322,9 +322,9 @@ def main(
     -  eval "$(jdk activate zsh)"  Enable auto JVM switching on directory change
     -  jdk alias 21 zulu-21        Create alias '21' pointing to zulu-21
     -  jdk aliases                 List all aliases
-    -  jdk use 21                  Set Java version for current directory
-    -  jdk use --global zulu-25    Set global fallback Java version
-    -  jdk unuse                   Clear Java version for current directory
+    -  jdk use 21                  Set Java environment for current directory
+    -  jdk use --global zulu-25    Set global fallback Java environment
+    -  jdk unuse                   Clear Java environment for current directory
     -  jdk unalias 21              Remove alias '21'
     """
     log(f"main()")

@@ -1,4 +1,4 @@
-export _JDKMAN_SHELL=zsh
+export _JDKMAN_SHELL=bash
 export _JDKMAN_ORIG_PATH="$PATH"
 _JDKMAN_CURRENT_ENV_TAG=""
 
@@ -27,10 +27,10 @@ _jdkman_find_env_tag() {
         return
       fi
     fi
-    dir="${dir:h}"
+    dir="$(dirname "$dir")"
   done
-  if [[ -f "$HOME/.config/jdkman/.java-version.global" ]]; then
-    echo "$(<"$HOME/.config/jdkman/.java-version.global")"
+  if [[ -f "$HOME/.config/jdkman/.java-version" ]]; then
+    echo "$(<"$HOME/.config/jdkman/.java-version")"
   fi
 }
 
@@ -48,11 +48,6 @@ _jdkman_hook() {
   fi
 }
 
-typeset -ag chpwd_functions
-if [[ -z "${chpwd_functions[(r)_jdkman_hook]+1}" ]]; then
-  chpwd_functions=( _jdkman_hook ${chpwd_functions[@]} )
-fi
-typeset -ag precmd_functions
-if [[ -z "${precmd_functions[(r)_jdkman_hook]+1}" ]]; then
-  precmd_functions=( _jdkman_hook ${precmd_functions[@]} )
+if [[ "$PROMPT_COMMAND" != *"_jdkman_hook"* ]]; then
+  PROMPT_COMMAND="_jdkman_hook${PROMPT_COMMAND:+;$PROMPT_COMMAND}"
 fi

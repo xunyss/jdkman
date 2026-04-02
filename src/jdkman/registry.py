@@ -201,14 +201,3 @@ def get_dist(slug: str, version: str | None = None) -> dict[str, Any]:
         "version": target_version["version"],
     } | target_dist
 
-
-def cleanup_cache():
-    log(f"cleanup_cache()")
-
-    for cached in CACHE_DIR.iterdir():
-        if cached.is_dir():
-            shutil.rmtree(cached)
-        else:
-            cached.unlink()
-        log(f"Remove: {cached}")
-

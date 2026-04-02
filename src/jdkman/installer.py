@@ -191,3 +191,14 @@ def upgrade_jvm(slug: str) -> Path:
     uninstall_jvm(slug)
     return install_jvm(slug)
 
+
+def cleanup_cache():
+    log(f"cleanup_cache()")
+
+    for cached in CACHE_DIR.iterdir():
+        if cached.is_dir():
+            shutil.rmtree(cached)
+        else:
+            cached.unlink()
+        log(f"Remove: {cached}")
+

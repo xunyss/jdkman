@@ -10,7 +10,7 @@ from .console import st_emp, st_dim
 from .console import out, log, MARK_CHECK
 from .detect import scan_unmanaged
 from .installer import download_jvm
-from .registry import get_dist, get_slug, get_installed, get_aliases, get_managed
+from .registry import get_installed, get_aliases, get_managed, get_slug, get_dist
 
 
 app = typer.Typer()

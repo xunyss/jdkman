@@ -93,3 +93,12 @@ def extract_archive(archive_path: Path, extract_path: Path) -> None:
 def remove_letters(text: str) -> str:
     return re.sub(r"[A-Za-z]", "", text).strip()
 
+
+def shorten(path: Path) -> str | None:
+    if path is None:
+        return None
+    try:
+        return "~/" + str(path.relative_to(Path.home()))
+    except ValueError:
+        return str(path)
+

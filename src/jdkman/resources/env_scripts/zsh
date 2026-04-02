@@ -29,8 +29,8 @@ _jdkman_find_env_tag() {
     fi
     dir="${dir:h}"
   done
-  if [[ -f "$HOME/.config/jdkman/.java-version.global" ]]; then
-    echo "$(<"$HOME/.config/jdkman/.java-version.global")"
+  if [[ -f "$HOME/.config/jdkman/.java-version" ]]; then
+    echo "$(<"$HOME/.config/jdkman/.java-version")"
   fi
 }
 

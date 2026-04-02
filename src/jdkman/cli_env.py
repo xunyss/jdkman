@@ -1,13 +1,16 @@
-from pathlib import Path
 from typing import Annotated
 
 import typer
 
 from .autocomplete import autocomplete_installed, autocomplete_aliases, autocomplete_managed
 from .config import is_dev
-from .console import log, out, table, MARK_CHECK, MARK_WARNING, MARK_INVALID, st_emp, st_div, st_dim, st_not
-from .environments import set_env_file, unset_env_file, set_env_alias, unset_env_alias
-from .registry import get_managed
+from .console import log, out, table, MARK_CHECK, MARK_WARNING, st_emp, st_hig, st_div, st_dim, st_not
+from .environments import (
+    print_activate_script, print_deactivate_script,
+    set_env_tag, unset_env_tag, get_env_aliases,
+    set_env_alias, unset_env_alias, get_envs,
+)
+from .utils import shorten
 
 
 app = typer.Typer()
@@ -19,7 +22,7 @@ def activate(
             metavar="<SHELL>",
             help="Shell type. (e.g. zsh, bash)"
         )],
-        _dev_mode: Annotated[bool, typer.Option(
+        dev_mode: Annotated[bool, typer.Option(
             "--dev", "-d", hidden=True
         )] = False,
 ):
@@ -32,15 +35,9 @@ def activate(
     """
     log(f"activate()")
     log(f"  shell: {shell}")
-    log(f"  _dev_mode: {_dev_mode}")
+    log(f"  dev_mode: {dev_mode}")
 
-    script = f"{shell}_dev" if _dev_mode and is_dev() else shell
-    script = Path(__file__).parent / f"resources/activate_script/{script}"
-    if not script.is_file():
-        out(f"{MARK_INVALID} Unsupported shell: {st_div(shell)}")
-        raise typer.Exit(code=-1)
-
-    print(script.read_text(), end="")
+    print_activate_script(shell, dev_mode and is_dev())
 
 
 @app.command(rich_help_panel="Environments", no_args_is_help=True)
@@ -59,12 +56,40 @@ def deactivate(
     log(f"deactivate()")
     log(f"  shell: {shell}")
 
-    script = Path(__file__).parent / f"resources/activate_script/{shell}_deactivate"
-    if not script.is_file():
-        out(f"{MARK_INVALID} Unsupported shell: {st_div(shell)}")
-        raise typer.Exit(code=-1)
+    print_deactivate_script(shell)
 
-    print(script.read_text(), end="")
+
+@app.command(rich_help_panel="Environments")
+def env():
+    """
+    Show current Java environment status.
+
+    Displays the active Java environment for the current directory,
+    along with local .java-version and global fallback settings.
+    Examples:
+    -  jdk env
+    """
+    log(f"env()")
+
+    envs = get_envs()
+    active_scope = "local" if envs["local"]["version"] else "global" if envs["global"]["version"] else None
+    if not active_scope:
+        out(f"{MARK_CHECK} No activate Java environment.")
+        raise typer.Exit()
+
+    tab = table("status", "scope", "tag", "distro", "version", "source")
+    for scope, env_info in envs.items():
+        is_active = scope == active_scope and env_info["version"]
+        tag, slug, version, source = env_info["tag"], env_info["slug"], env_info["version"], shorten(env_info["source"])
+        tab.add_row(
+            is_active and f"{MARK_CHECK} {st_dim('active')}" or None,
+            is_active and st_hig(scope) or st_dim(scope),
+            is_active and st_emp(tag) or st_dim(tag) if tag else None,
+            is_active and slug or st_dim(slug) if slug else None,
+            version and st_dim(version) or None,
+            source and st_dim(source) or None,
+        )
+    out(tab)
 
 
 @app.command(name="set", hidden=True, no_args_is_help=True)
@@ -77,14 +102,14 @@ def use(
         )],
         set_global: Annotated[bool, typer.Option(
             "--global", "-g",
-            help="Set as global fallback (~/.java-version) instead of current directory."
+            help="Set as global fallback instead of current directory."
         )] = False,
 ):
     """
-    Set Java version for current directory or globally.  [dim]\\[aliases: set][/dim]
+    Set Java environment for current directory or globally.  [dim]\\[aliases: set][/dim]
 
     Creates a .java-version file in the current directory (default),
-    or ~/.config/jdkman/.java-version.global with --global.
+    or ~/.config/jdkman/.java-version with --global.
     Examples:
     -  jdk use zulu-17
     -  jdk use 11
@@ -94,8 +119,9 @@ def use(
     log(f"  distro: {distro}")
     log(f"  set_global: {set_global}")
 
-    env_file = set_env_file(distro, set_global)
-    out(f"{MARK_CHECK} {'Global' if set_global else 'Local'} Java environment: {st_emp(distro)} {st_dim(env_file)}", highlight=False)
+    env_file = set_env_tag(distro, set_global)
+    out(f"{MARK_CHECK} {'Global' if set_global else 'Local'} "
+        f"Java environment: {st_emp(distro)} {st_dim(env_file)}", highlight=False)
 
 
 @app.command(name="uns", hidden=True)
@@ -103,14 +129,14 @@ def use(
 def unuse(
         set_global: Annotated[bool, typer.Option(
             "--global", "-g",
-            help="Clear global Java version (~/.config/jdkman/.java-version.global)."
+            help="Clear global Java environment."
         )] = False,
 ):
     """
-    Clear Java version for current directory or globally.  [dim]\\[aliases: uns][/dim]
+    Clear Java environment for current directory or globally.  [dim]\\[aliases: uns][/dim]
 
     Empties the .java-version file in the current directory (default),
-    or ~/.config/jdkman/.java-version.global with --global.
+    or ~/.config/jdkman/.java-version with --global.
     Examples:
     -  jdk unuse
     -  jdk unuse --global
@@ -118,8 +144,9 @@ def unuse(
     log(f"unuse()")
     log(f"  set_global: {set_global}")
 
-    env_file = unset_env_file(set_global)
-    out(f"{MARK_CHECK} Cleared {'global' if set_global else 'local'} Java environment: {st_dim(env_file)}",  highlight=False)
+    env_file = unset_env_tag(set_global)
+    out(f"{MARK_CHECK} Cleared {'global' if set_global else 'local'} "
+        f"Java environment: {st_dim(env_file)}",  highlight=False)
 
 
 @app.command(name="alias", rich_help_panel="Environments", no_args_is_help=True)
@@ -158,7 +185,7 @@ def unset_alias(
         )],
 ):
     """
-    Remove a JVM distribution alias.
+    Remove a Java environment alias.
 
     Examples:
     -  jdk unalias 21
@@ -173,24 +200,22 @@ def unset_alias(
 @app.command(rich_help_panel="Environments")
 def aliases():
     """
-    List all JVM distribution aliases.
+    List all Java environment aliases.
 
     Examples:
     -  jdk aliases
     """
     log(f"aliases()")
 
-    managed = get_managed(sort=True, divided=True)
-    _installed = managed["installed"]
-    _aliases = managed["aliases"]
     tab = table("alias", "distro", "version", "status")
-    for alias, distro in _aliases.items():
-        is_enabled = distro in _installed
+    for item in get_env_aliases():
+        alias, slug, version = item["alias"], item["slug"], item["version"]
+        is_enabled = slug and version
         tab.add_row(
             alias,
-            is_enabled and distro or st_not(distro),
-            is_enabled and st_dim(_installed[distro]["version"]) or None,
-            is_enabled and MARK_CHECK or f"{MARK_WARNING} {st_dim('disbaled')}",
+            is_enabled and slug or st_not(slug),
+            is_enabled and st_dim(version) or None,
+            is_enabled and MARK_CHECK or f"{MARK_WARNING} {st_dim('disabled')}",
         )
     out(tab if tab.row_count > 0
         else f"{MARK_CHECK} No JVM distribution aliases.")

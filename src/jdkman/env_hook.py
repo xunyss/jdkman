@@ -13,7 +13,7 @@ from pathlib import Path
 
 def main():
     if len(sys.argv) < 2:
-        sys.exit(1)
+        sys.exit(-1)
 
     env_tag = sys.argv[1]
     is_macos = platform.system() == "Darwin"
@@ -24,7 +24,7 @@ def main():
     managed_db = install_dir / ".jdkman"
     if not managed_db.is_file():
         print(f"# jdkman: managed db not found", file=sys.stderr)
-        sys.exit(1)
+        sys.exit(-1)
 
     managed = json.loads(managed_db.read_text())
     installed = managed.get("installed", {})
@@ -36,11 +36,10 @@ def main():
 
     if env_tag not in installed:
         print(f"# jdkman: {env_tag} is not installed", file=sys.stderr)
-        sys.exit(1)
+        sys.exit(-1)
 
     location = installed[env_tag]["location"]
     java_home = f"{location}/Contents/Home" if is_macos else location
-
     print(f'export JAVA_HOME="{java_home}"')
 
 

@@ -16,7 +16,7 @@ A command-line tool for installing and managing OpenJDK distributions.
 
 - [ ] jdk help 에서 version, help 다른 섹션으로 내리기
 - [x] command alias
-- [ ] query current applied jdk
+- [x] query current applied jdk
 
 ```
 
