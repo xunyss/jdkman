@@ -6,7 +6,7 @@ import typer
 
 from .config import GLOBAL_ENV_FILE, LOCAL_ENV_FILE
 from .console import log, out, MARK_INVALID, st_div, st_cod
-from .registry import get_managed, get_installed, get_installed_slug, get_slug, add_aliases, get_aliases, del_aliases
+from .registry import get_managed, get_installed, get_installed_slug, get_slug, add_alias, del_alias, get_aliases
 
 
 # todo: java -> /usr/bin/java (shims: by java() shell function)
@@ -148,7 +148,7 @@ def set_env_alias(alias: str, slug: str):
     # validate installed
     get_installed_slug(slug)
 
-    add_aliases(alias, slug)
+    add_alias(alias, slug)
 
 
 def unset_env_alias(alias: str):
@@ -162,7 +162,7 @@ def unset_env_alias(alias: str):
         out(f"{MARK_INVALID} {st_div(alias)} is not found.", highlight=False)
         raise typer.Exit(code=-1)
 
-    del_aliases(alias)
+    del_alias(alias)
 
 
 def get_env_aliases() -> list[dict[str, Any]]:

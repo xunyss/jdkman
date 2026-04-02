@@ -26,7 +26,7 @@ def verify_checksum(dist_file: Path, dist_checksum: str) -> Path:
         out(f"{MARK_INVALID} Checksum mismatch!")
         raise typer.Exit(code=-1)
     else:
-        out(f"Checksum verified.")
+        out(f"{MARK_CHECK} Checksum verified.")
 
     return dist_file
 

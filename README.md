@@ -1,6 +1,6 @@
 # jdkman
 
-A command-line tool for installing, managing, and switching OpenJDK distributions.
+A command-line tool for installing, managing, and switching JVM distributions.
 
 ---
 
@@ -181,7 +181,7 @@ Upgrade an installed distribution to the latest patch version.
 
 ```bash
 jdk upgrade zulu-21
-jdk up zulu-21        # alias
+jdk upd zulu-21       # alias
 ```
 
 ---
@@ -202,7 +202,7 @@ List all available JDK vendors.
 
 ```bash
 jdk vendors
-jdk vendor    # alias
+jdk vd        # alias
 ```
 
 ---
@@ -213,7 +213,7 @@ List all available JDK editions (vendor + feature combinations).
 
 ```bash
 jdk editions
-jdk edition    # alias
+jdk ed         # alias
 ```
 
 ---

@@ -20,14 +20,14 @@ app = typer.Typer()
 def activate(
         shell: Annotated[str, typer.Argument(
             metavar="<SHELL>",
-            help="Shell type. (e.g. zsh, bash)"
+            help="Shell type. (e.g. zsh, bash, fish)"
         )],
         dev_mode: Annotated[bool, typer.Option(
             "--dev", "-d", hidden=True
         )] = False,
 ):
     """
-    Print shell integration script for auto JVM-env switching.
+    Print shell integration script for auto Java environment switching.
 
     Add to your shell profile (~/.zshrc or ~/.bashrc):
     -  eval "$(jdk activate zsh)"
@@ -45,11 +45,11 @@ def activate(
 def deactivate(
         shell: Annotated[str, typer.Argument(
             metavar="<SHELL>",
-            help="Shell type. (e.g. zsh, bash)"
+            help="Shell type. (e.g. zsh, bash, fish)"
         )],
 ):
     """
-    Print shell script to remove auto JVM-env switching.
+    Print shell script to remove auto Java environment switching.
 
     Handled automatically by the jdk() shell function:
     -  jdk deactivate
@@ -75,7 +75,7 @@ def env():
     envs = get_envs(validate=True)
     active_scope = "local" if envs["local"]["version"] else "global" if envs["global"]["version"] else None
     if not active_scope:
-        out(f"{MARK_CHECK} No activate Java environment.")
+        out(f"{MARK_CHECK} No active Java environment.")
         raise typer.Exit()
 
     tab = table("status", "scope", "tag", "distro", "version", "source")
@@ -186,7 +186,7 @@ def unset_alias(
         )],
 ):
     """
-    Remove a Java environment alias.
+    Remove a JVM distribution alias.
 
     Examples:
     -  jdk unalias 21
@@ -201,7 +201,7 @@ def unset_alias(
 @app.command(rich_help_panel="Environments")
 def aliases():
     """
-    List all Java environment aliases.
+    List all JVM distribution aliases.
 
     Examples:
     -  jdk aliases

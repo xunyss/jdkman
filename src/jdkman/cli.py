@@ -105,7 +105,7 @@ def vendors():
 
     Examples:
     -  jdk vendors
-    -  jdk vendor
+    -  jdk vd
     """
     log(f"vendors()")
 
@@ -124,7 +124,7 @@ def editions():
 
     Examples:
     -  jdk editions
-    -  jdk edition
+    -  jdk ed
     """
     log(f"editions()")
 
@@ -261,7 +261,7 @@ def uninstall(
     out(f"{MARK_CHECK} Uninstalled: {st_emp(distro)} {st_dim(uninstalled_dir)}", highlight=False)
 
 
-@app.command(name="up", hidden=True, no_args_is_help=True)
+@app.command(name="upd", hidden=True, no_args_is_help=True)
 @app.command(rich_help_panel="Managements", no_args_is_help=True)
 def upgrade(
         distro: Annotated[str, typer.Argument(
@@ -308,7 +308,7 @@ def main(
         )] = None,
 ):
     """
-    A command-line tool for installing and managing OpenJDK distributions.
+    A command-line tool for installing, managing, and switching JVM distributions.
 
     Managements Examples:
     -  jdk remote zulu        Search available JVM distributions
@@ -319,7 +319,7 @@ def main(
     -  jdk uninstall zulu-21  Remove an installed JVM distribution
 
     Environments Examples:
-    -  eval "$(jdk activate zsh)"  Enable auto JVM switching on directory change
+    -  eval "$(jdk activate zsh)"  Enable auto Java environment switching on directory change
     -  jdk alias 21 zulu-21        Create alias '21' pointing to zulu-21
     -  jdk aliases                 List all aliases
     -  jdk use 21                  Set Java environment for current directory

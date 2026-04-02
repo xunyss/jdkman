@@ -59,8 +59,8 @@ def del_installed(slug: str):
     _write_managed(managed)
 
 
-def add_aliases(alias: str, slug: str):
-    log(f"add_aliases()")
+def add_alias(alias: str, slug: str):
+    log(f"add_alias()")
     log(f"  alias: {alias}")
     log(f"  slug: {slug}")
 
@@ -71,8 +71,8 @@ def add_aliases(alias: str, slug: str):
     _write_managed(managed)
 
 
-def del_aliases(alias: str):
-    log(f"del_aliases()")
+def del_alias(alias: str):
+    log(f"del_alias()")
     log(f"  alias: {alias}")
 
     managed = _read_managed()

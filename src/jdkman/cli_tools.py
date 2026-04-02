@@ -62,7 +62,7 @@ def mise(
         )] = None
 ):
     """
-    Show or Register JVM distributions as mise java tools via symlink.
+    Show or register JVM distributions as mise java tools via symlink.
 
     Examples:
     -  jdk mise
