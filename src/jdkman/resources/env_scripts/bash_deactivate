@@ -7,4 +7,5 @@ unset _JDKMAN_SHELL
 unset _JDKMAN_ORIG_PATH
 unset _JDKMAN_CURRENT_ENV_TAG
 
-unset -f jdk _jdkman_find_env_tag _jdkman_hook
+unalias jdk 2>/dev/null
+unset -f _jdkman_jdk _jdkman_find_env_tag _jdkman_hook

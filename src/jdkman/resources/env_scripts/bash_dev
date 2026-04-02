@@ -2,7 +2,7 @@ export _JDKMAN_SHELL=bash
 [[ "$(uname -s)" != "Darwin" ]] && export _JDKMAN_ORIG_PATH="$PATH"
 _JDKMAN_CURRENT_ENV_TAG=""
 
-jdk() {
+_jdkman_jdk() {
   case "$1" in
   deactivate)
     if [[ ! " $@ " =~ " --help " ]] && [[ ! " $@ " =~ " -h " ]]; then
@@ -16,6 +16,7 @@ jdk() {
     ;;
   esac
 }
+alias jdk=_jdkman_jdk
 
 _jdkman_find_env_tag() {
   local dir="$PWD" content

@@ -47,7 +47,7 @@ jdk activate fish | source
 이후부터 `jdk` 명령은 바이너리가 아닌 **쉘 함수**로 실행된다.
 
 ```zsh
-jdk() {
+_jdkman_jdk() {
   case "$1" in
   deactivate)
     if [[ ! " $@ " =~ " --help " ]] && [[ ! " $@ " =~ " -h " ]]; then
@@ -61,7 +61,10 @@ jdk() {
     ;;
   esac
 }
+alias jdk=_jdkman_jdk
 ```
+
+`which jdk` 출력이 함수 본문 대신 `jdk: aliased to _jdkman_jdk`로 표시된다.
 
 `command jdk`로 바이너리를 직접 호출하는 이유: 쉘 함수 안에서 `jdk`를 그냥 호출하면 자기 자신을 재귀 호출하게 된다.
 
