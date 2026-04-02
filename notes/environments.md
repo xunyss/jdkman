@@ -20,7 +20,7 @@
 | `jdk activate <shell>` | 쉘 훅 스크립트 출력 (eval로 현재 세션에 적용) |
 | `jdk deactivate` | 쉘 훅 제거 (jdk 쉘 함수가 자동으로 eval 처리) |
 | `jdk use <distro>` | 현재 디렉토리에 `.java-version` 파일 생성 |
-| `jdk use <distro> --global` | `~/.config/jdkman/.java-version.global` 생성 |
+| `jdk use <distro> --global` | `~/.config/jdkman/.java-version` 생성 |
 | `jdk unuse` | 현재 디렉토리의 `.java-version` 파일을 빈 파일로 초기화 |
 | `jdk unuse --global` | global 파일을 빈 파일로 초기화 |
 
@@ -34,6 +34,13 @@
 # ~/.zshrc 또는 현재 세션에서
 eval "$(jdk activate zsh)"
 eval "$(jdk activate bash)"
+```
+
+fish는 `eval $(...)`가 아닌 `| source` 방식을 사용한다.
+
+```fish
+# ~/.config/fish/config.fish
+jdk activate fish | source
 ```
 
 `activate` 실행 시 현재 쉘에 `jdk()` 래퍼 함수가 등록된다.
@@ -70,18 +77,22 @@ jdk deactivate --help   # --help/-h 있으면 eval 없이 바이너리로 직접
 deactivate 실행 시 제거되는 것:
 - `chpwd_functions`, `precmd_functions`(zsh) 또는 `PROMPT_COMMAND`(bash)에서 훅 제거
 - `jdk`, `_jdkman_find_env_tag`, `_jdkman_hook` 함수 제거
-- `JAVA_HOME`, `_JDKMAN_SHELL`, `_JDKMAN_ORIG_PATH`, `_JDKMAN_CURRENT_ENV_TAG` unset
+- `JAVA_HOME` unset, `PATH`를 `_JDKMAN_ORIG_PATH`로 복원 (비-macOS)
+- `_JDKMAN_SHELL`, `_JDKMAN_ORIG_PATH`, `_JDKMAN_CURRENT_ENV_TAG` unset
 
 ### 스크립트 파일 위치
 
 ```
-src/jdkman/resources/activate_script/
+src/jdkman/resources/env_scripts/
 ├── zsh              # zsh 훅 스크립트
 ├── zsh_dev          # zsh 개발용 (eval → echo, jdk hook-env 출력 확인용)
 ├── zsh_deactivate   # zsh 훅 제거 스크립트
 ├── bash             # bash 훅 스크립트
 ├── bash_dev         # bash 개발용
-└── bash_deactivate  # bash 훅 제거 스크립트
+├── bash_deactivate  # bash 훅 제거 스크립트
+├── fish             # fish 훅 스크립트
+├── fish_dev         # fish 개발용
+└── fish_deactivate  # fish 훅 제거 스크립트
 ```
 
 mise의 `activate` 출력을 참고해서 설계했다.
@@ -97,6 +108,7 @@ mise의 `activate` 출력을 참고해서 설계했다.
 | zsh | `precmd_functions` | 매 프롬프트 표시 직전 |
 | zsh | `chpwd_functions` | `cd`로 디렉토리 변경 시 |
 | bash | `PROMPT_COMMAND` | 매 프롬프트 표시 직전 |
+| fish | `--on-event fish_prompt` | 매 프롬프트 표시 직전 |
 
 > zsh의 `chpwd`가 발생하면 항상 `precmd`도 발생한다. 반대는 성립하지 않는다.
 > `chpwd` 등록은 이론상 불필요하지만, 하위 호환성을 위해 유지한다.
@@ -122,9 +134,9 @@ _jdkman_find_env_tag() {
     fi
     dir="${dir:h}"   # bash는 dir="$(dirname "$dir")"
   done
-  # global fallback: ~/.config/jdkman/.java-version.global
-  if [[ -f "$HOME/.config/jdkman/.java-version.global" ]]; then
-    echo "$(<"$HOME/.config/jdkman/.java-version.global")"
+  # global fallback: ~/.config/jdkman/.java-version
+  if [[ -f "$HOME/.config/jdkman/.java-version" ]]; then
+    echo "$(<"$HOME/.config/jdkman/.java-version")"
   fi
 }
 
@@ -139,6 +151,7 @@ _jdkman_hook() {
     eval "$(jdk hook-env "$env_tag" 2>/dev/null)"
   else
     unset JAVA_HOME
+    [[ -n "${_JDKMAN_ORIG_PATH+x}" ]] && export PATH="$_JDKMAN_ORIG_PATH"
   fi
 }
 ```
@@ -198,6 +211,7 @@ jdk hook-env "zulu-21"
   → aliases 먼저 resolve
   → installed에서 location 조회
   → stdout: export JAVA_HOME="/path/to/zulu-21/Contents/Home"
+            export PATH="/path/to/zulu-21/bin:$_JDKMAN_ORIG_PATH"  (비-macOS만)
   → 에러(미설치 등): stderr 출력 후 exit 1
 ```
 
@@ -210,14 +224,14 @@ jdk hook-env "zulu-21"
 | 파일 | 위치 | 용도 |
 |---|---|---|
 | `.java-version` | 프로젝트 디렉토리 | 로컬 JDK 지정 |
-| `.java-version.global` | `~/.config/jdkman/` | 전역 fallback |
+| `.java-version` | `~/.config/jdkman/` | 전역 fallback |
 
 ### 탐색 순서
 
 1. `$PWD`부터 루트(`/`)까지 상위 디렉토리를 순서대로 탐색
 2. 발견된 `.java-version` 파일에 **내용이 있으면** 해당 env_tag 사용
 3. 파일이 없거나 빈 파일이면 상위 디렉토리 계속 탐색
-4. 모두 없으면 `~/.config/jdkman/.java-version.global` (global fallback)
+4. 모두 없으면 `~/.config/jdkman/.java-version` (global fallback)
 5. 그것도 없으면 `unset JAVA_HOME`
 
 ### 빈 파일 동작
@@ -228,7 +242,7 @@ jdk hook-env "zulu-21"
 ```
 현재 디렉토리/.java-version  (빈파일)  → skip, 상위 탐색 계속
 상위 디렉토리/.java-version  (없음)    → skip
-~/.config/jdkman/.java-version.global  (zulu-11)  → JAVA_HOME = zulu-11
+~/.config/jdkman/.java-version  (zulu-11)  → JAVA_HOME = zulu-11
 ```
 
 ### 파일 형식
