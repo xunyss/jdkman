@@ -17,6 +17,7 @@ _jdkman_jdk() {
   esac
 }
 alias jdk=_jdkman_jdk
+compdef _jdk_completion _jdkman_jdk 2>/dev/null
 
 _jdkman_find_env_tag() {
   local dir="$PWD" content

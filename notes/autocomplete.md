@@ -175,7 +175,51 @@ fi
 
 ---
 
-## 5. `zstyle ':completion:*' menu select`
+## 5. alias와 자동완성 충돌 문제
+
+### 문제
+
+`jdk activate` 실행 후 `alias jdk=_jdkman_jdk`가 설정되면, zsh/bash가 alias를 확장한 뒤 completion을 찾는다.
+
+```
+jdk <TAB>
+  → alias 확장 → _jdkman_jdk
+  → _jdkman_jdk completion 찾음 → 없음 → 자동완성 실패 ❌
+```
+
+activate 전(`jdk` = binary)은 `#compdef jdk`로 정상 동작하지만, activate 후(`jdk` = alias)에는 `_jdkman_jdk` completion이 등록되어 있지 않아 실패한다.
+
+### 해결
+
+activation 스크립트에서 alias 설정 직후 completion도 함께 등록한다.
+
+```zsh
+# zsh (env_scripts/zsh, zsh_dev)
+alias jdk=_jdkman_jdk
+compdef _jdk_completion _jdkman_jdk 2>/dev/null
+```
+
+```bash
+# bash (env_scripts/bash, bash_dev)
+alias jdk=_jdkman_jdk
+complete -o default -F _jdk_completion _jdkman_jdk 2>/dev/null
+```
+
+`2>/dev/null`은 completion이 아직 로드되지 않은 경우 에러를 무시한다.
+
+**fish는 해당 없음**: fish의 `alias`는 내부적으로 function으로 구현되고, completion은 command 이름(`jdk`) 기준으로 동작하므로 alias 확장 영향을 받지 않는다.
+
+### deactivate 후 동작
+
+`jdk deactivate` 실행 후:
+- `unalias jdk` → `jdk`가 다시 binary로 복귀
+- `unfunction _jdkman_jdk` → 함수 제거
+- `compdef _jdk_completion _jdkman_jdk` 등록은 남아있지만 `_jdkman_jdk`가 없으므로 무해함
+- `jdk`(binary) completion은 `#compdef jdk`(`_jdk` 파일)가 compinit 시점부터 계속 유지되므로 정상 동작 ✅
+
+---
+
+## 6. `zstyle ':completion:*' menu select`
 
 완성 후보를 **방향키로 선택 가능한 인터랙티브 메뉴**로 표시한다.
 
