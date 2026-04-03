@@ -175,11 +175,11 @@ fi
 
 ---
 
-## 5. alias와 자동완성 충돌 문제
+## 5. alias와 자동완성 충돌 문제 (미채택 방식의 부작용)
 
-### 문제
+activate 시 `alias jdk=_jdkman_jdk`를 사용할 경우 자동완성이 깨진다.
 
-`jdk activate` 실행 후 `alias jdk=_jdkman_jdk`가 설정되면, zsh/bash가 alias를 확장한 뒤 completion을 찾는다.
+zsh/bash는 alias를 확장한 뒤 completion을 찾는다.
 
 ```
 jdk <TAB>
@@ -187,35 +187,23 @@ jdk <TAB>
   → _jdkman_jdk completion 찾음 → 없음 → 자동완성 실패 ❌
 ```
 
-activate 전(`jdk` = binary)은 `#compdef jdk`로 정상 동작하지만, activate 후(`jdk` = alias)에는 `_jdkman_jdk` completion이 등록되어 있지 않아 실패한다.
+### 보완 시도
 
-### 해결
-
-activation 스크립트에서 alias 설정 직후 completion도 함께 등록한다.
+activation 스크립트에서 alias 직후 completion을 추가 등록하면 된다.
 
 ```zsh
-# zsh (env_scripts/zsh, zsh_dev)
 alias jdk=_jdkman_jdk
-compdef _jdk_completion _jdkman_jdk 2>/dev/null
+compdef _jdk_completion _jdkman_jdk 2>/dev/null        # zsh
+# complete -o default -F _jdk_completion _jdkman_jdk 2>/dev/null  # bash
 ```
-
-```bash
-# bash (env_scripts/bash, bash_dev)
-alias jdk=_jdkman_jdk
-complete -o default -F _jdk_completion _jdkman_jdk 2>/dev/null
-```
-
-`2>/dev/null`은 completion이 아직 로드되지 않은 경우 에러를 무시한다.
 
 **fish는 해당 없음**: fish의 `alias`는 내부적으로 function으로 구현되고, completion은 command 이름(`jdk`) 기준으로 동작하므로 alias 확장 영향을 받지 않는다.
 
-### deactivate 후 동작
+### 왜 이것도 불충분한가
 
-`jdk deactivate` 실행 후:
-- `unalias jdk` → `jdk`가 다시 binary로 복귀
-- `unfunction _jdkman_jdk` → 함수 제거
-- `compdef _jdk_completion _jdkman_jdk` 등록은 남아있지만 `_jdkman_jdk`가 없으므로 무해함
-- `jdk`(binary) completion은 `#compdef jdk`(`_jdk` 파일)가 compinit 시점부터 계속 유지되므로 정상 동작 ✅
+`compdef`는 `compinit` 이후에만 유효하다. `.zshrc`에서 `jdk activate`가 `compinit`보다 먼저 실행되면 `compdef` 호출이 `2>/dev/null`에 묻혀 조용히 실패한다. `#compdef jdk _jdkman_jdk`를 Homebrew formula의 `_jdk` 파일에 추가하면 해결되지만, 그러면 formula 재빌드가 필요하고 복잡성이 계속 늘어난다.
+
+결론: alias 방식 자체를 쓰지 않는 게 가장 깔끔하다. → `notes/environments.md` 참고.
 
 ---
 

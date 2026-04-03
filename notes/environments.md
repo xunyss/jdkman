@@ -43,47 +43,54 @@ fish는 `eval $(...)`가 아닌 `| source` 방식을 사용한다.
 jdk activate fish | source
 ```
 
-`activate` 실행 시 현재 쉘에 `_jdkman_jdk()` 래퍼 함수가 등록되고, `alias jdk=_jdkman_jdk`로 `jdk`가 이 함수를 가리킨다.
-이후부터 `jdk` 명령은 바이너리가 아닌 **alias → 쉘 함수**로 실행된다.
+`activate` 실행 시 훅 함수들(`_jdkman_find_env_tag`, `_jdkman_hook`)이 등록된다.
+`jdk` 자체는 그대로 binary이고 별도 래퍼 함수나 alias는 없다.
+
+### deactivate
+
+deactivate도 activate와 동일하게 `eval`로 실행해야 한다.
 
 ```zsh
+eval "$(jdk deactivate zsh)"
+eval "$(jdk deactivate bash)"
+```
+
+```fish
+jdk deactivate fish | source
+```
+
+deactivate 실행 시 제거되는 것:
+- `chpwd_functions`, `precmd_functions`(zsh) 또는 `PROMPT_COMMAND`(bash)에서 훅 제거
+- `_jdkman_find_env_tag`, `_jdkman_hook` 함수 제거
+- `JAVA_HOME` unset, `PATH`를 `_JDKMAN_ORIG_PATH`로 복원 (비-macOS)
+- `_JDKMAN_SHELL`, `_JDKMAN_ORIG_PATH`, `_JDKMAN_CURRENT_ENV_TAG` unset
+
+### eval 없이 jdk deactivate 하는 방법 (미채택)
+
+`jdk deactivate`를 eval 없이 `jdk deactivate`만으로 실행할 수 있게 하려면, activate 시 `jdk` 래퍼 함수/alias를 등록하면 된다.
+
+```zsh
+# activate 스크립트에 포함
 _jdkman_jdk() {
   case "$1" in
   deactivate)
     if [[ ! " $@ " =~ " --help " ]] && [[ ! " $@ " =~ " -h " ]]; then
       eval "$(command jdk deactivate "${2:-$_JDKMAN_SHELL}")"  # eval 자동 처리
     else
-      command jdk "$@"   # --help/-h 는 바이너리로 직접 전달
+      command jdk "$@"
     fi
     ;;
   *)
-    command jdk "$@"   # 그 외는 바이너리로 위임
+    command jdk "$@"
     ;;
   esac
 }
 alias jdk=_jdkman_jdk
-compdef _jdk_completion _jdkman_jdk 2>/dev/null  # zsh: alias 확장 후에도 completion 동작
-# bash: complete -o default -F _jdk_completion _jdkman_jdk 2>/dev/null
 ```
 
-`which jdk` 출력이 함수 본문 대신 `jdk: aliased to _jdkman_jdk`로 표시된다.
+`command jdk`로 바이너리를 직접 호출하는 이유: alias/함수 안에서 `jdk`를 그냥 호출하면 자기 자신을 재귀 호출하게 된다.
 
-`command jdk`로 바이너리를 직접 호출하는 이유: 쉘 함수 안에서 `jdk`를 그냥 호출하면 자기 자신을 재귀 호출하게 된다.
-
-### deactivate
-
-`jdk deactivate`는 `_jdkman_jdk()` 쉘 함수가 내부에서 자동으로 eval 처리하므로 사용자가 eval을 직접 쓸 필요가 없다.
-
-```zsh
-jdk deactivate          # _JDKMAN_SHELL 환경변수로 쉘 자동 감지
-jdk deactivate --help   # --help/-h 있으면 eval 없이 바이너리로 직접 전달
-```
-
-deactivate 실행 시 제거되는 것:
-- `chpwd_functions`, `precmd_functions`(zsh) 또는 `PROMPT_COMMAND`(bash)에서 훅 제거
-- `jdk` alias 제거, `_jdkman_jdk`, `_jdkman_find_env_tag`, `_jdkman_hook` 함수 제거
-- `JAVA_HOME` unset, `PATH`를 `_JDKMAN_ORIG_PATH`로 복원 (비-macOS)
-- `_JDKMAN_SHELL`, `_JDKMAN_ORIG_PATH`, `_JDKMAN_CURRENT_ENV_TAG` unset
+**채택하지 않은 이유:** `jdk`가 alias가 되면서 zsh/bash의 자동완성이 alias 확장 후 `_jdkman_jdk` completion을 찾아 실패한다. activation 스크립트에서 `compdef _jdk_completion _jdkman_jdk`를 추가해 보완할 수 있으나, `compinit` 실행 순서에 따라 여전히 불안정하다. `jdk deactivate` 사용 빈도가 낮아 복잡성 대비 이득이 없다고 판단해 미채택.
 
 ### 스크립트 파일 위치
 

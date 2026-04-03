@@ -4,24 +4,6 @@ if test (uname -s) != "Darwin"
 end
 set -g _JDKMAN_CURRENT_ENV_TAG ""
 
-function _jdkman_jdk
-    switch "$argv[1]"
-        case deactivate
-            if not contains -- --help $argv; and not contains -- -h $argv
-                set -l _shell $_JDKMAN_SHELL
-                if test (count $argv) -ge 2
-                    set _shell $argv[2]
-                end
-                eval (command jdk deactivate $_shell)
-            else
-                command jdk $argv
-            end
-        case '*'
-            command jdk $argv
-    end
-end
-alias jdk=_jdkman_jdk
-
 function _jdkman_find_env_tag
     set -l dir $PWD
     while test "$dir" != "/"

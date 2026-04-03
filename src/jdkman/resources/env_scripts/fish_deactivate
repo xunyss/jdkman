@@ -6,4 +6,4 @@ set -e _JDKMAN_SHELL
 set -e _JDKMAN_ORIG_PATH
 set -e _JDKMAN_CURRENT_ENV_TAG
 
-functions --erase jdk _jdkman_jdk _jdkman_find_env_tag _jdkman_hook
+functions --erase _jdkman_find_env_tag _jdkman_hook

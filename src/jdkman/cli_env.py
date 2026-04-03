@@ -51,8 +51,10 @@ def deactivate(
     """
     Print shell script to remove auto Java environment switching.
 
-    Handled automatically by the jdk() shell function:
-    -  jdk deactivate
+    Run with eval to apply to the current shell session:
+    -  eval "$(jdk deactivate zsh)"
+    -  eval "$(jdk deactivate bash)"
+    -  jdk deactivate fish | source
     """
     log(f"deactivate()")
     log(f"  shell: {shell}")

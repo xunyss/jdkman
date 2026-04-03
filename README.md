@@ -306,9 +306,9 @@ jdk activate fish | source   # Add to ~/.config/fish/config.fish
 Remove the shell integration (auto-switching).
 
 ```bash
-jdk deactivate zsh
-jdk deactivate bash
-jdk deactivate fish
+eval "$(jdk deactivate zsh)"
+eval "$(jdk deactivate bash)"
+jdk deactivate fish | source
 ```
 
 ---

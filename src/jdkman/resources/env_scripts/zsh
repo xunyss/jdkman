@@ -2,23 +2,6 @@ export _JDKMAN_SHELL=zsh
 [[ "$(uname -s)" != "Darwin" ]] && export _JDKMAN_ORIG_PATH="$PATH"
 _JDKMAN_CURRENT_ENV_TAG=""
 
-_jdkman_jdk() {
-  case "$1" in
-  deactivate)
-    if [[ ! " $@ " =~ " --help " ]] && [[ ! " $@ " =~ " -h " ]]; then
-      eval "$(command jdk deactivate "${2:-$_JDKMAN_SHELL}")"
-    else
-      command jdk "$@"
-    fi
-    ;;
-  *)
-    command jdk "$@"
-    ;;
-  esac
-}
-alias jdk=_jdkman_jdk
-compdef _jdk_completion _jdkman_jdk 2>/dev/null
-
 _jdkman_find_env_tag() {
   local dir="$PWD" content
   while [[ "$dir" != "/" ]]; do
