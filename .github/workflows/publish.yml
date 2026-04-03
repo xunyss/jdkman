@@ -50,6 +50,12 @@ jobs:
         id: version
         run: echo "VERSION=$(uv version --short)" >> $GITHUB_OUTPUT
 
+      - name: Compute GitHub archive sha256
+        id: archive
+        run: |
+          SHA256=$(curl -sL "https://github.com/xunyss/jdkman/archive/refs/tags/v${{ steps.version.outputs.VERSION }}.tar.gz" | shasum -a 256 | cut -d' ' -f1)
+          echo "SHA256=$SHA256" >> $GITHUB_OUTPUT
+
       - name: Checkout homebrew-tap
         uses: actions/checkout@v6
         with:
@@ -58,7 +64,7 @@ jobs:
           path: homebrew-tap
 
       - name: Generate Formula
-        run: uv export --no-hashes --format requirements-txt | python scripts/homebrew/generate_formula.py ${{ steps.version.outputs.VERSION }} > homebrew-tap/Formula/jdkman.rb
+        run: uv export --no-hashes --format requirements-txt | python scripts/homebrew/generate_formula.py ${{ steps.version.outputs.VERSION }} ${{ steps.archive.outputs.SHA256 }} > homebrew-tap/Formula/jdkman.rb
 
       - name: Install Homebrew tap
         run: |

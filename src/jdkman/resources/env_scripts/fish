@@ -28,7 +28,11 @@ function _jdkman_hook --on-event fish_prompt
     end
     set -g _JDKMAN_CURRENT_ENV_TAG $env_tag
     if test -n "$env_tag"
-        eval (command jdk hook-env $env_tag 2>/dev/null)
+        if command -v jdk-hook-env &>/dev/null
+            eval (jdk-hook-env $env_tag 2>/dev/null)
+        else
+            eval (command jdk hook-env $env_tag 2>/dev/null)
+        end
     else
         set -e JAVA_HOME
         if set -q _JDKMAN_ORIG_PATH

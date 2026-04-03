@@ -93,19 +93,20 @@ def zsh_completion_ruby(indent="    "):
 
 
 def main():
-    if len(sys.argv) < 2:
-        print("Usage: generate_formula.py <version>", file=sys.stderr)
+    if len(sys.argv) < 3:
+        print("Usage: generate_formula.py <version> <github-archive-sha256>", file=sys.stderr)
         sys.exit(1)
 
     version = sys.argv[1]
+    github_sha256 = sys.argv[2]
+    github_url = f"https://github.com/xunyss/jdkman/archive/refs/tags/v{version}.tar.gz"
 
-    # fetch main package info
+    # fetch main package info (wheel only)
     pkg_data = fetch_pypi(PACKAGE_NAME, version)
-    sdist_url, sdist_sha256 = find_sdist(pkg_data)
     whl_url, whl_sha256, _ = find_whl(pkg_data, py3_none_any_only=True)
 
-    if not sdist_url or not whl_url:
-        print(f"ERROR: could not find sdist or whl for {PACKAGE_NAME}=={version}", file=sys.stderr)
+    if not whl_url:
+        print(f"ERROR: could not find whl for {PACKAGE_NAME}=={version}", file=sys.stderr)
         sys.exit(1)
 
     # parse dependencies from stdin
@@ -135,16 +136,20 @@ class Jdkman < Formula
 
   desc "A command-line tool for installing and managing JVM distributions, and switching Java environments."
   homepage "{HOMEPAGE}"
-  url "{sdist_url}"
-  sha256 "{sdist_sha256}"
+  url "{github_url}"
+  sha256 "{github_sha256}"
   license "MIT"
 
+  depends_on "rust" => :build
   # depends_on "python@3.14"
   depends_on "python@3"
 
 {resources_str}
 
   def install
+    system "cargo", "build", "--release", "--manifest-path", "hook/Cargo.toml"
+    bin.install "hook/target/release/jdk-hook-env"
+
     venv = virtualenv_create(libexec, "python3")
     resources.each do |r|
       r.stage do

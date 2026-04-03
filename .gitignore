@@ -209,6 +209,7 @@ __marimo__/
 
 # project
 .DS_Store
-.claude/
 .java-version
+
+.claude/
 
