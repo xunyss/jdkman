@@ -1,6 +1,6 @@
 # jdkman
 
-A command-line tool for installing, managing, and switching JVM distributions.
+A command-line tool for installing and managing JVM distributions, and switching Java environments.
 
 ---
 

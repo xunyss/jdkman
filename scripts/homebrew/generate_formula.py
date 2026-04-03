@@ -133,7 +133,7 @@ def main():
 class Jdkman < Formula
   include Language::Python::Virtualenv
 
-  desc "A command-line tool for installing and managing OpenJDK distributions."
+  desc "A command-line tool for installing and managing JVM distributions, and switching Java environments."
   homepage "{HOMEPAGE}"
   url "{sdist_url}"
   sha256 "{sdist_sha256}"
