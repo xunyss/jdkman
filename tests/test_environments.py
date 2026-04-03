@@ -48,6 +48,68 @@ def global_env_file(tmp_path, monkeypatch):
     return env_file
 
 
+# ── is_activated ──────────────────────────────────────────────────────────────
+
+def test_is_activated_returns_true_when_shell_set(monkeypatch):
+    monkeypatch.setenv("_JDKMAN_SHELL", "zsh")
+    assert environments.is_activated() is True
+
+
+def test_is_activated_returns_false_when_shell_not_set(monkeypatch):
+    monkeypatch.delenv("_JDKMAN_SHELL", raising=False)
+    assert environments.is_activated() is False
+
+
+# ── print_activate_script ─────────────────────────────────────────────────────
+
+def test_print_activate_script_zsh_contains_hook(capsys):
+    environments.print_activate_script("zsh")
+    out = capsys.readouterr().out
+    assert "_jdkman_hook" in out
+    assert "_JDKMAN_SHELL=zsh" in out
+
+
+def test_print_activate_script_bash_contains_hook(capsys):
+    environments.print_activate_script("bash")
+    out = capsys.readouterr().out
+    assert "_jdkman_hook" in out
+    assert "_JDKMAN_SHELL=bash" in out
+
+
+def test_print_activate_script_fish_contains_hook(capsys):
+    environments.print_activate_script("fish")
+    out = capsys.readouterr().out
+    assert "_jdkman_hook" in out
+    assert "_JDKMAN_SHELL fish" in out
+
+
+def test_print_activate_script_unsupported_shell_exits():
+    with pytest.raises(typer.Exit):
+        environments.print_activate_script("powershell")
+
+
+def test_print_activate_script_contains_jdk_hook_env_fallback(capsys):
+    """shell hook 이 jdk-hook-env → jdk hook-env 순으로 fallback 하는지 확인."""
+    environments.print_activate_script("zsh")
+    out = capsys.readouterr().out
+    assert "jdk-hook-env" in out
+    assert "jdk hook-env" in out
+
+
+# ── print_deactivate_script ───────────────────────────────────────────────────
+
+def test_print_deactivate_script_zsh_unsets_vars(capsys):
+    environments.print_deactivate_script("zsh")
+    out = capsys.readouterr().out
+    assert "JAVA_HOME" in out
+    assert "_JDKMAN_SHELL" in out
+
+
+def test_print_deactivate_script_unsupported_shell_exits():
+    with pytest.raises(typer.Exit):
+        environments.print_deactivate_script("powershell")
+
+
 # ── find_env_file ─────────────────────────────────────────────────────────────
 
 def test_find_env_file_returns_global(global_env_file):
@@ -193,7 +255,7 @@ def test_set_env_tag_invalid_slug_exits(managed_db, global_env_file, monkeypatch
 
 def test_set_env_tag_alias_accepted(managed_db, global_env_file, monkeypatch, tmp_path):
     # alias "21" → "zulu-21" 이 managed 에 있으면 set_env_tag 가 허용
-    registry.add_aliases("21", "zulu-21")
+    registry.add_alias("21", "zulu-21")
     monkeypatch.chdir(tmp_path)
     env_file = environments.set_env_tag("21", is_global=False)
     assert env_file.read_text().strip() == "21"
@@ -232,7 +294,7 @@ def test_set_env_alias_conflicts_with_installed_slug(managed_db, monkeypatch):
 # ── unset_env_alias ───────────────────────────────────────────────────────────
 
 def test_unset_env_alias_removes_alias(managed_db):
-    registry.add_aliases("21", "zulu-21")
+    registry.add_alias("21", "zulu-21")
     environments.unset_env_alias("21")
     assert "21" not in registry.get_aliases()
 
@@ -245,8 +307,8 @@ def test_unset_env_alias_not_found_exits(managed_db):
 # ── get_env_aliases ───────────────────────────────────────────────────────────
 
 def test_get_env_aliases_returns_list(managed_db):
-    registry.add_aliases("21", "zulu-21")
-    registry.add_aliases("lts", "zulu-21")
+    registry.add_alias("21", "zulu-21")
+    registry.add_alias("lts", "zulu-21")
     aliases = environments.get_env_aliases()
     alias_names = [a["alias"] for a in aliases]
     assert "21" in alias_names
@@ -254,7 +316,7 @@ def test_get_env_aliases_returns_list(managed_db):
 
 
 def test_get_env_aliases_includes_version(managed_db):
-    registry.add_aliases("21", "zulu-21")
+    registry.add_alias("21", "zulu-21")
     aliases = environments.get_env_aliases()
     entry = next(a for a in aliases if a["alias"] == "21")
     assert entry["slug"] == "zulu-21"
@@ -268,7 +330,7 @@ def test_get_env_aliases_empty(managed_db):
 
 def test_get_env_aliases_uninstalled_slug_version_is_none(managed_db):
     # alias 가 설치되지 않은 slug 를 가리킬 때 version은 None
-    registry.add_aliases("ghost", "liberica-21")
+    registry.add_alias("ghost", "liberica-21")
     aliases = environments.get_env_aliases()
     entry = next(a for a in aliases if a["alias"] == "ghost")
     assert entry["version"] is None

@@ -125,16 +125,17 @@ mise의 `activate` 출력을 참고해서 설계했다.
 > zsh의 `chpwd`가 발생하면 항상 `precmd`도 발생한다. 반대는 성립하지 않는다.
 > `chpwd` 등록은 이론상 불필요하지만, 하위 호환성을 위해 유지한다.
 
-### 최적화 전략 - Python 프로세스 최소화
+### 최적화 전략 - 외부 프로세스 호출 최소화
 
-`jdk hook-env`는 Python 프로세스를 띄우는 비용이 있다.
-`cd`마다 무조건 실행하면 `pyenv`, `nvm` 등 다른 버전 관리 도구와 함께 사용 시 체감 성능 저하가 발생할 수 있다.
+`cd`마다 외부 프로세스를 실행하면 `pyenv`, `nvm` 등 다른 버전 관리 도구와 함께 사용 시 체감 성능 저하가 발생할 수 있다.
 
-**해결책:** `.java-version` 탐색은 쉘에서 직접 처리하고, env_tag가 바뀌었을 때만 `jdk hook-env`를 호출한다.
+**해결책 1:** `.java-version` 탐색은 쉘에서 직접 처리하고, env_tag가 바뀌었을 때만 외부 프로세스를 호출한다.
+
+**해결책 2:** env_tag → JAVA_HOME 변환을 수행하는 외부 프로세스로 Python 대신 네이티브 바이너리(`jdk-hook-env`)를 우선 사용한다. (섹션 6 참고)
 
 ```zsh
 _jdkman_find_env_tag() {
-  # Python 없이 쉘에서 직접 .java-version 탐색 (상위 디렉토리까지)
+  # 쉘에서 직접 .java-version 탐색 (상위 디렉토리까지)
   local dir="$PWD" content
   while [[ "$dir" != "/" ]]; do
     if [[ -f "$dir/.java-version" ]]; then
@@ -156,11 +157,15 @@ _jdkman_hook() {
   local env_tag
   env_tag="$(_jdkman_find_env_tag)"
   if [[ "$env_tag" == "$_JDKMAN_CURRENT_ENV_TAG" ]]; then
-    return   # env_tag 변경 없으면 jdk hook-env 실행 안 함
+    return   # env_tag 변경 없으면 외부 프로세스 실행 안 함
   fi
   _JDKMAN_CURRENT_ENV_TAG="$env_tag"
   if [[ -n "$env_tag" ]]; then
-    eval "$(jdk hook-env "$env_tag" 2>/dev/null)"
+    if command -v jdk-hook-env &>/dev/null; then
+      eval "$(jdk-hook-env "$env_tag" 2>/dev/null)"   # Rust 네이티브 바이너리 (Homebrew)
+    else
+      eval "$(jdk hook-env "$env_tag" 2>/dev/null)"   # Python fallback (pip)
+    fi
   else
     unset JAVA_HOME
     [[ -n "${_JDKMAN_ORIG_PATH+x}" ]] && export PATH="$_JDKMAN_ORIG_PATH"
@@ -168,11 +173,11 @@ _jdkman_hook() {
 }
 ```
 
-**`jdk hook-env`가 실행되는 경우:**
+**외부 프로세스가 실행되는 경우:**
 - `.java-version`(또는 global)에 내용이 존재하고
 - 이전과 env_tag가 **다를 때만**
 
-같은 디렉토리에 머물거나 `.java-version` 없는 곳을 이동할 때는 `jdk hook-env`가 실행되지 않는다.
+같은 디렉토리에 머물거나 `.java-version` 없는 곳을 이동할 때는 외부 프로세스가 실행되지 않는다.
 
 ### env_tag 비교의 부가 효과
 
@@ -182,9 +187,10 @@ _jdkman_hook() {
 
 ---
 
-## 5. jdk hook-env (단일 진입점)
+## 5. jdk hook-env (Python fallback)
 
-`jdk hook-env`는 `jdk` 바이너리를 그대로 사용하되, **진입점에서 분기**한다.
+`jdk hook-env`는 `jdk-hook-env` 네이티브 바이너리가 없는 환경(pip 설치)에서 사용되는 Python fallback이다.
+`jdk` 바이너리를 그대로 사용하되, **진입점에서 분기**해 heavy import를 건너뛴다.
 
 ```python
 # src/jdkman/main.py
@@ -207,19 +213,37 @@ jdk = "jdkman.main:invoke"
 
 `sys.argv` 체크를 import 전에 수행하므로 heavy import가 발생하지 않는다.
 
-| | `jdk hook-env` (fast path) | `jdk install` 등 |
-|---|---|---|
-| import | json, platform, sys, pathlib (stdlib만) | typer + click + rich + requests + ... |
-| 예상 실행 시간 | 30~50ms | 100~200ms+ |
+| | `jdk-hook-env` (Rust) | `jdk hook-env` (Python fast path) | `jdk install` 등 |
+|---|---|---|---|
+| 구현 | `hook/src/main.rs` | `src/jdkman/env_hook.py` | `src/jdkman/cli.py` |
+| import | 없음 (네이티브) | json, platform, sys, pathlib (stdlib만) | typer + click + rich + requests + ... |
+| 실행 시간 | ~3ms | ~30ms | ~150ms+ |
 
 `jdk hook-env`는 `--help`에 노출되지 않는 내부 커맨드다.
 
-### jdk hook-env 동작
+---
+
+## 6. jdk-hook-env (Rust 네이티브 바이너리)
+
+### 개요
+
+`jdk-hook-env`는 shell hook의 핵심 동작(env_tag → JAVA_HOME 변환)을 Python 없이 수행하는 독립 네이티브 바이너리다.
+Python 인터프리터 시작 비용을 완전히 제거해 `cd` 시 체감 성능을 크게 개선한다.
+
+### 소스 위치
 
 ```
-jdk hook-env "zulu-21"
-  → main.invoke(): "hook-env" 감지 → env_hook.main() 호출
-  → MANAGED_JVM_DB(~/.jdk/.jdkman 또는 ~/Library/Java/JavaVirtualMachines/.jdkman) 읽기
+hook/                   # Rust crate 루트
+├── Cargo.toml
+└── src/
+    └── main.rs
+```
+
+### 동작
+
+```
+jdk-hook-env "zulu-21"
+  → MANAGED_JVM_DB(~/Library/Java/JavaVirtualMachines/.jdkman 또는 ~/.jdk/.jdkman) 읽기
   → aliases 먼저 resolve
   → installed에서 location 조회
   → stdout: export JAVA_HOME="/path/to/zulu-21/Contents/Home"
@@ -227,9 +251,37 @@ jdk hook-env "zulu-21"
   → 에러(미설치 등): stderr 출력 후 exit 1
 ```
 
+fish shell은 `_JDKMAN_SHELL=fish` 환경변수로 감지해 `set -gx` 문법으로 출력한다.
+
+### 설치 위치
+
+| 설치 방법 | 위치 |
+|---|---|
+| Homebrew | `/opt/homebrew/bin/jdk-hook-env` |
+| 개발 환경 | `.venv/bin/jdk-hook-env` |
+
+### shell hook과의 연동
+
+shell hook(`_jdkman_hook`)이 `command -v jdk-hook-env`로 존재 여부를 확인해 자동으로 선택한다.
+별도 설정 없이 Homebrew 설치 시 자동으로 Rust 바이너리를 사용한다.
+
+### 개발 환경 빌드
+
+```zsh
+./scripts/dev_sync.zsh
+# → uv sync + cargo build --release + .venv/bin/에 복사
+```
+
+Rust 소스만 변경 시 직접 빌드도 가능하다:
+
+```zsh
+cargo build --release --manifest-path hook/Cargo.toml
+cp hook/target/release/jdk-hook-env .venv/bin/
+```
+
 ---
 
-## 6. .java-version 파일
+## 8. .java-version 파일
 
 ### 파일 종류
 
@@ -268,7 +320,13 @@ env_tag(slug 또는 alias) 한 줄만 작성한다.
 
 ---
 
-## 7. 개발 및 테스트
+## 9. 개발 및 테스트
+
+### 환경 세팅
+
+```zsh
+./scripts/dev_sync.zsh   # uv sync + Rust 빌드 + .venv/bin/에 jdk-hook-env 복사
+```
 
 ### 활성화 (현재 세션)
 
@@ -283,11 +341,16 @@ eval "$(jdk activate zsh "$@")"
 ```
 
 `--dev` 옵션이 있으면 `activate_script/zsh_dev`를 사용한다.
-`zsh_dev`는 `zsh`와 동일하지만 `eval` 대신 `echo`를 사용해서 `jdk hook-env`의 출력을 터미널에서 직접 확인할 수 있다.
+`zsh_dev`는 `zsh`와 동일하지만 `eval` 대신 `echo`를 사용해서 실행 결과를 터미널에서 직접 확인할 수 있다.
 
-### jdk hook-env 직접 테스트
+### hook 직접 테스트
 
 ```zsh
+# Rust 바이너리
+jdk-hook-env zulu-21
+# → export JAVA_HOME="/Library/Java/JavaVirtualMachines/zulu-21/Contents/Home"
+
+# Python fallback
 jdk hook-env zulu-21
 # → export JAVA_HOME="/Library/Java/JavaVirtualMachines/zulu-21/Contents/Home"
 ```

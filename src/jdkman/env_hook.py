@@ -1,7 +1,10 @@
-# todo: env_hook.py -> C or Rust
 """
-jdk_hook - Standalone shell hook for jdkman auto JVM switching.
+jdk hook-env - Python fallback for jdkman auto JVM switching.
 Resolves a JVM slug to JAVA_HOME and outputs shell export commands.
+
+This is a fallback for pip-installed environments.
+When installed via Homebrew, the native Rust binary `jdk-hook-env` is used instead,
+and this code is NOT called by the shell hook.
 
 Kept intentionally dependency-free (stdlib only) for fast startup.
 """

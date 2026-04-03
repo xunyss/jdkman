@@ -131,28 +131,28 @@ def test_del_installed_leaves_other_entries(managed_db, sample_dist):
 # ── add_aliases / del_aliases ─────────────────────────────────────────────────
 
 def test_add_aliases(managed_db):
-    registry.add_aliases("21", "zulu-21")
+    registry.add_alias("21", "zulu-21")
     assert registry.get_aliases()["21"] == "zulu-21"
 
 
 def test_add_aliases_multiple(managed_db):
-    registry.add_aliases("21", "zulu-21")
-    registry.add_aliases("lts", "temurin-21")
+    registry.add_alias("21", "zulu-21")
+    registry.add_alias("lts", "temurin-21")
     aliases = registry.get_aliases()
     assert aliases["21"] == "zulu-21"
     assert aliases["lts"] == "temurin-21"
 
 
 def test_del_aliases(managed_db):
-    registry.add_aliases("21", "zulu-21")
-    registry.del_aliases("21")
+    registry.add_alias("21", "zulu-21")
+    registry.del_alias("21")
     assert "21" not in registry.get_aliases()
 
 
 def test_del_aliases_leaves_other_entries(managed_db):
-    registry.add_aliases("21", "zulu-21")
-    registry.add_aliases("lts", "temurin-21")
-    registry.del_aliases("21")
+    registry.add_alias("21", "zulu-21")
+    registry.add_alias("lts", "temurin-21")
+    registry.del_alias("21")
     assert "21" not in registry.get_aliases()
     assert registry.get_aliases()["lts"] == "temurin-21"
 
@@ -160,17 +160,17 @@ def test_del_aliases_leaves_other_entries(managed_db):
 # ── get_aliases ───────────────────────────────────────────────────────────────
 
 def test_get_aliases_unsorted(managed_db):
-    registry.add_aliases("zz", "zulu-21")
-    registry.add_aliases("aa", "temurin-21")
+    registry.add_alias("zz", "zulu-21")
+    registry.add_alias("aa", "temurin-21")
     aliases = registry.get_aliases(sort=False)
     # 순서 보장 없음 — 키 존재만 확인
     assert set(aliases.keys()) == {"zz", "aa"}
 
 
 def test_get_aliases_sorted(managed_db):
-    registry.add_aliases("zz", "zulu-21")
-    registry.add_aliases("aa", "temurin-21")
-    registry.add_aliases("mm", "liberica-21")
+    registry.add_alias("zz", "zulu-21")
+    registry.add_alias("aa", "temurin-21")
+    registry.add_alias("mm", "liberica-21")
     aliases = registry.get_aliases(sort=True)
     assert list(aliases.keys()) == ["aa", "mm", "zz"]
 
@@ -200,7 +200,7 @@ def test_get_installed_slug_found(managed_db, sample_dist):
 
 def test_get_managed_flat(managed_db, sample_dist):
     registry.add_installed("zulu-21", sample_dist, Path("/path"))
-    registry.add_aliases("21", "zulu-21")
+    registry.add_alias("21", "zulu-21")
     merged = registry.get_managed()
     assert "zulu-21" in merged
     assert "21" in merged
@@ -208,7 +208,7 @@ def test_get_managed_flat(managed_db, sample_dist):
 
 def test_get_managed_divided(managed_db, sample_dist):
     registry.add_installed("zulu-21", sample_dist, Path("/path"))
-    registry.add_aliases("21", "zulu-21")
+    registry.add_alias("21", "zulu-21")
     result = registry.get_managed(divided=True)
     assert "installed" in result
     assert "aliases" in result
