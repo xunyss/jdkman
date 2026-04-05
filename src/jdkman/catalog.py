@@ -2,7 +2,7 @@ import json
 from typing import Any
 
 from .config import JVM_API_URL, cached_catalog, cache_catalog
-from .console import out, log, MARK_ARROW
+from .console import log, out, MARK_ARROW, MARK_CHECK
 from .utils import version_key
 
 
@@ -37,7 +37,7 @@ def fetch_artifacts() -> list[dict[str, Any]]:
         artifacts: list[dict[str, Any]] = response.json()
         cache_catalog(artifacts)
 
-        out(f"Fetched: {len(artifacts)}")
+        out(f"{MARK_CHECK} Fetched: {len(artifacts)}")
 
     return artifacts
 
