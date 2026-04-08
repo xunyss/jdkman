@@ -1,6 +1,5 @@
 import json
 import re
-import shutil
 from pathlib import Path
 from typing import Any
 
@@ -8,12 +7,12 @@ import typer
 from rich.pretty import pretty_repr
 
 from .catalog import fetch_slugs
-from .config import CACHE_DIR, MANAGED_JVM_DB
-from .console import log, out, MARK_INVALID, st_div
+from .config import MANAGED_JVM_DB
+from .console import log, out, MARK_INVALID, st_emp, st_div
 from .utils import version_key
 
 
-_managed_cache: dict[str, dict[str, Any]] = None
+_managed_cache: dict[str, dict[str, Any]] = {}
 
 def _read_managed() -> dict[str, dict[str, Any]]:
     if _managed_cache:
@@ -23,6 +22,7 @@ def _read_managed() -> dict[str, dict[str, Any]]:
     return _write_managed({})
 
 def _write_managed(managed: dict[str, dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    global _managed_cache
     _managed_cache = managed
     MANAGED_JVM_DB.write_text(json.dumps(managed))
     return managed

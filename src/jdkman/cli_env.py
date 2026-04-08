@@ -4,7 +4,7 @@ import typer
 
 from .autocomplete import autocomplete_installed, autocomplete_aliases, autocomplete_managed
 from .config import is_dev
-from .console import log, out, table, MARK_CHECK, MARK_WARNING, st_emp, st_hig, st_div, st_dim, st_not
+from .console import log, out, table, MARK_CHECK, MARK_WARNING, MARK_INVALID, st_emp, st_hig, st_div, st_dim, st_not
 from .environments import (
     print_activate_script, print_deactivate_script,
     set_env_tag, unset_env_tag, get_env_aliases,
@@ -152,28 +152,34 @@ def unuse(
         f"Java environment: {st_dim(env_file)}",  highlight=False)
 
 
-@app.command(name="alias", rich_help_panel="Environments", no_args_is_help=True)
+@app.command(name="alias", rich_help_panel="Environments")
 def set_alias(
         alias: Annotated[str, typer.Argument(
-            metavar="<ALIAS>",
             help="Alias name to create.",
-        )],
+        )] = None,
         distro: Annotated[str, typer.Argument(
-            metavar="<DISTRO>",
             help="Installed JVM distribution name to map to.",
             autocompletion=autocomplete_installed
-        )],
+        )] = None,
 ):
     """
-    Create an alias for an installed JVM distribution.
+    Create an alias for an installed JVM distribution or list all aliases.
 
     Examples:
     -  jdk alias 21 zulu-21
     -  jdk alias lts temurin-21
+    -  jdk alias
     """
     log(f"set_alias()")
     log(f"  alias: {alias}")
     log(f"  distro: {distro}")
+
+    if not alias:
+        aliases()
+        raise typer.Exit()
+    if not distro:
+        out(f"{MARK_INVALID} Missing Arguments: {st_div('[DISTRO]')}", highlight=False)
+        raise typer.Exit(code=-1)
 
     set_env_alias(alias, distro)
     out(f"{MARK_CHECK} Alias: {st_emp(alias)} → {st_div(distro)}", highlight=False)
@@ -203,7 +209,7 @@ def unset_alias(
 @app.command(rich_help_panel="Environments")
 def aliases():
     """
-    List all JVM distribution aliases.
+    List all JVM distribution aliases.  [dim]\\[aliases: alias][/dim]
 
     Examples:
     -  jdk aliases
