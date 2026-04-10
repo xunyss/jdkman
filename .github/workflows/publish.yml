@@ -96,7 +96,7 @@ jobs:
           JSON=$(ls jdkman--*.bottle.json jdkman-*.bottle.json 2>/dev/null | head -1)
           python scripts/homebrew/insert_bottle.py "$JSON" homebrew-tap/Formula/jdkman.rb
 
-      - uses: Homebrew/actions/git-user-config@master
+      - uses: Homebrew/actions/git-user-config@main
 
       - name: Commit Formula to homebrew-tap
         working-directory: homebrew-tap
@@ -104,7 +104,7 @@ jobs:
           git add Formula/jdkman.rb
           git commit -m "jdkman ${{ steps.version.outputs.VERSION }}"
 
-      - uses: Homebrew/actions/git-try-push@master
+      - uses: Homebrew/actions/git-try-push@main
         with:
           directory: homebrew-tap
           branch: main
