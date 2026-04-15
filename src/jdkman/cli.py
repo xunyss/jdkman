@@ -286,7 +286,7 @@ def upgrade(
 
 
 @app.callback(
-    epilog=f"── Made by {st_hig('xunyss')} :thumbs_up: ──",
+    epilog=f"For more information:\n\nvisit: {st_hig('https://github.com/xunyss/jdkman')}",
     invoke_without_command=True,
     no_args_is_help=True,
 )
