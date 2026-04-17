@@ -98,7 +98,7 @@ def get_installed(sort: bool = False) -> dict[str, dict[str, Any]]:
     log(f"  sort: {sort}")
 
     managed = _read_managed()
-    installed = managed["installed"]
+    installed = managed.get("installed", {})
     return dict(sorted(installed.items(), key=installed_sort_key)) if sort else installed
 
 
@@ -106,7 +106,7 @@ def get_aliases(sort: bool = False) -> dict[str, str]:
     log(f"get_aliases()")
 
     managed = _read_managed()
-    aliases = managed["aliases"]
+    aliases = managed.get("aliases", {})
     return dict(sorted(aliases.items())) if sort else aliases
 
 
@@ -114,8 +114,8 @@ def get_managed(sort: bool = False, divided: bool = False) -> dict[str, Any]:
     log(f"get_managed()")
 
     managed = _read_managed()
-    installed: dict[str, Any] = managed["installed"]
-    aliases: dict[str, str] = managed["aliases"]
+    installed: dict[str, Any] = managed.get("installed", {})
+    aliases: dict[str, str] = managed.get("aliases", {})
 
     if sort:
         installed = dict(sorted(installed.items(), key=installed_sort_key))
