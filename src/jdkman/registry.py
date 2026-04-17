@@ -19,7 +19,10 @@ def _read_managed() -> dict[str, dict[str, Any]]:
         return _managed_cache
     if MANAGED_JVM_DB.is_file():
         return json.loads(MANAGED_JVM_DB.read_text())
-    return _write_managed({})
+    return _write_managed({
+        "installed": {},
+        "aliases": {},
+    })
 
 def _write_managed(managed: dict[str, dict[str, Any]]) -> dict[str, dict[str, Any]]:
     global _managed_cache
@@ -98,7 +101,7 @@ def get_installed(sort: bool = False) -> dict[str, dict[str, Any]]:
     log(f"  sort: {sort}")
 
     managed = _read_managed()
-    installed = managed.get("installed", {})
+    installed = managed["installed"]
     return dict(sorted(installed.items(), key=installed_sort_key)) if sort else installed
 
 
@@ -106,7 +109,7 @@ def get_aliases(sort: bool = False) -> dict[str, str]:
     log(f"get_aliases()")
 
     managed = _read_managed()
-    aliases = managed.get("aliases", {})
+    aliases = managed["aliases"]
     return dict(sorted(aliases.items())) if sort else aliases
 
 
@@ -114,8 +117,8 @@ def get_managed(sort: bool = False, divided: bool = False) -> dict[str, Any]:
     log(f"get_managed()")
 
     managed = _read_managed()
-    installed: dict[str, Any] = managed.get("installed", {})
-    aliases: dict[str, str] = managed.get("aliases", {})
+    installed: dict[str, Any] = managed["installed"]
+    aliases: dict[str, str] = managed["aliases"]
 
     if sort:
         installed = dict(sorted(installed.items(), key=installed_sort_key))
