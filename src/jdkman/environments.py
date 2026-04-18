@@ -108,7 +108,7 @@ def get_env_tag() -> dict[str, dict[str, Any]]:
 
 
 def get_envs(validate: bool = False) -> dict[str, dict[str, Any]]:
-    log(f"get_env()")
+    log(f"get_envs()")
     log(f"  validate: {validate}")
 
     if validate and not is_activated():

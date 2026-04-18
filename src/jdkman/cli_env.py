@@ -76,7 +76,7 @@ def env():
 
     envs = get_envs(validate=True)
     active_scope = "local" if envs["local"]["version"] else "global" if envs["global"]["version"] else None
-    if not active_scope:
+    if not active_scope and not envs["local"]["tag"] and not envs["global"]["tag"]:
         out(f"{MARK_CHECK} No active Java environment.")
         raise typer.Exit()
 
@@ -88,7 +88,7 @@ def env():
             is_active and f"{MARK_CHECK} {st_dim('active')}" or None,
             is_active and st_hig(scope) or st_dim(scope),
             is_active and st_emp(tag) or st_dim(tag) if tag else None,
-            is_active and slug or st_dim(slug) if slug else None,
+            is_active and slug or st_dim(slug) if version else st_not(slug) if slug else None,
             version and st_dim(version) or None,
             source and st_dim(source) or None,
         )
