@@ -1,0 +1,7 @@
+
+### macos
+GET https://mise-java.jdx.dev/jvm/ga/macosx/aarch64.json
+
+### windows
+GET https://mise-java.jdx.dev/jvm/ga/windows/x86_64.json
+
