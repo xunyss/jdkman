@@ -1,13 +1,13 @@
 [project]
 name = "jdkman"
-version = "0.4.8"
+version = "0.4.9"
 description = "A command-line tool for installing and managing OpenJDK distributions."
 authors = [{name = "junghun.song", email = "xunyss@gmail.com"}]
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "requests>=2.32.5",
-    "typer>=0.24.1",
+    "requests==2.32.5",
+    "typer==0.24.2",
 ]
 
 [project.scripts]
@@ -26,6 +26,6 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
-    "pytest>=9.0.2",
+    "pytest>=9.0.3",
 ]
 
