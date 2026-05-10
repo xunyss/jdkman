@@ -69,12 +69,12 @@ CACHE_DIR = Path.home() / ".cache" / APP_NAME
 CATALOG_CACHE_FILE = CACHE_DIR / ".catalog"
 CATALOG_CACHE_TTL = 60 * 60 * 12  # 12 hours (sec)
 
-INSTALL_DIR = Path.home() / ("Library/Java/JavaVirtualMachines" if is_macos() else ".jdk")
-MANAGED_JVM_DB = INSTALL_DIR / f".{APP_NAME}"
-
 CONFIG_DIR = Path.home() / ".config" / APP_NAME
+MANAGED_JVM_DB = CONFIG_DIR / "managed"
 LOCAL_ENV_FILE = ".java-version"
 GLOBAL_ENV_FILE = CONFIG_DIR / LOCAL_ENV_FILE
+
+INSTALL_DIR = Path.home() / ("Library/Java/JavaVirtualMachines" if is_macos() else ".jdk")
 
 #---------------------------------------------------------------------------------------------------
 DISABLE_SUGGEST_OPTIONS = True

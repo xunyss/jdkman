@@ -28,13 +28,7 @@ fn main() {
     let mut env_tag = args[1].clone();
     let is_macos = cfg!(target_os = "macos");
 
-    let install_dir: PathBuf = if is_macos {
-        dirs_home().join("Library/Java/JavaVirtualMachines")
-    } else {
-        dirs_home().join(".jdk")
-    };
-
-    let managed_db_path = install_dir.join(".jdkman");
+    let managed_db_path = dirs_home().join(".config/jdkman/managed");
     let content = match fs::read_to_string(&managed_db_path) {
         Ok(s) => s,
         Err(_) => {

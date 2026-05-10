@@ -243,7 +243,7 @@ hook/                   # Rust crate 루트
 
 ```
 jdk-hook-env "zulu-21"
-  → MANAGED_JVM_DB(~/Library/Java/JavaVirtualMachines/.jdkman 또는 ~/.jdk/.jdkman) 읽기
+  → MANAGED_JVM_DB(~/.config/jdkman/managed) 읽기
   → aliases 먼저 resolve
   → installed에서 location 조회
   → stdout: export JAVA_HOME="/path/to/zulu-21/Contents/Home"

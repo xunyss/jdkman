@@ -66,10 +66,11 @@ def sample_dist():
 # ── _read_managed ─────────────────────────────────────────────────────────────
 
 def test_read_managed_creates_file_when_missing(empty_managed_db):
+    expected = {"installed": {}, "aliases": {}}
     result = registry._read_managed()
-    assert result == {}
+    assert result == expected
     assert empty_managed_db.exists()
-    assert json.loads(empty_managed_db.read_text()) == {}
+    assert json.loads(empty_managed_db.read_text()) == expected
 
 
 def test_read_managed_returns_existing_data(managed_db):

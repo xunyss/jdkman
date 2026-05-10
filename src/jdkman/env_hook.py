@@ -22,10 +22,7 @@ def main():
     env_tag = sys.argv[1]
     is_macos = platform.system() == "Darwin"
 
-    # Mirror config.py path logic without importing it
-    install_dir = Path.home() / ("Library/Java/JavaVirtualMachines" if is_macos else ".jdk")
-
-    managed_db = install_dir / ".jdkman"
+    managed_db = Path.home() / ".config" / "jdkman" / "managed"
     if not managed_db.is_file():
         print(f"# jdkman: managed db not found", file=sys.stderr)
         sys.exit(-1)

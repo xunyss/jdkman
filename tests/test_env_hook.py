@@ -17,16 +17,15 @@ from jdkman.env_hook import main
 # ── helpers ───────────────────────────────────────────────────────────────────
 
 def _setup_db(home: Path, is_macos: bool, installed: dict, aliases: dict = None) -> Path:
-    """tmp home 아래에 .jdkman DB 파일을 생성한다."""
-    subdir = "Library/Java/JavaVirtualMachines" if is_macos else ".jdk"
-    install_dir = home / subdir
-    install_dir.mkdir(parents=True, exist_ok=True)
-    db = install_dir / ".jdkman"
+    """tmp home 아래에 managed DB 파일을 생성한다."""
+    db_dir = home / ".config" / "jdkman"
+    db_dir.mkdir(parents=True, exist_ok=True)
+    db = db_dir / "managed"
     db.write_text(json.dumps({
         "installed": installed,
         "aliases": aliases or {},
     }))
-    return install_dir
+    return db_dir
 
 
 @pytest.fixture
@@ -102,7 +101,7 @@ def test_alias_chain_resolves_correctly(fake_home, monkeypatch, capsys):
 def test_missing_db_exits_with_error(fake_home, monkeypatch):
     monkeypatch.setattr("platform.system", lambda: "Linux")
     # DB 파일 없이 디렉토리만 생성
-    (fake_home / ".jdk").mkdir(parents=True)
+    (fake_home / ".config" / "jdkman").mkdir(parents=True)
     monkeypatch.setattr(sys, "argv", ["jdk", "zulu-21"])
 
     with pytest.raises(SystemExit) as exc_info:
