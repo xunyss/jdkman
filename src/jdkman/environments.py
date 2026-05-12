@@ -6,7 +6,10 @@ import typer
 
 from .config import GLOBAL_ENV_FILE, LOCAL_ENV_FILE
 from .console import log, out, MARK_INVALID, st_div, st_cod
-from .registry import get_managed, get_installed, get_installed_slug, get_slug, add_alias, del_alias, get_aliases
+from .registry import (
+    get_installed, get_managed, get_installed_slug, get_managed_slug,
+    get_slug, get_aliases, add_alias, del_alias
+)
 
 
 # todo: java -> /usr/bin/java (shims: by java() shell function)
@@ -46,9 +49,8 @@ def set_env_tag(env_tag: str, is_global: bool = False) -> Path:
     log(f"  env_tag: {env_tag}")
     log(f"  is_global: {is_global}")
 
-    if env_tag not in get_managed():
-        out(f"{MARK_INVALID} {st_div(env_tag)} is invalid!", highlight=False)
-        raise typer.Exit(code=-1)
+    # validate env_tag
+    get_managed_slug(env_tag)
 
     env_file = find_env_file(is_global)
     env_file.write_text(env_tag + "\n")

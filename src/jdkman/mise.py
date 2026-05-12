@@ -7,7 +7,7 @@ import typer
 
 from .config import is_macos
 from .console import log, out, MARK_INVALID, st_div, st_dim
-from .registry import get_installed_slug, get_slug
+from .registry import get_managed_slug
 
 
 def validate_mise_installed():
@@ -32,24 +32,16 @@ def mise_ls() -> list[dict[str, Any]]:
     return json.loads(result.stdout)
 
 
-def mise_link(slug: str) -> list[dict[str, Any]]:
+def mise_link(env_tag: str):
     log(f"mise_link()")
-    log(f"  slug: {slug}")
+    log(f"  env_tag: {env_tag}")
 
-    # validate mise installed
-    validate_mise_installed()
+    # validate env_tag
+    installed_info = get_managed_slug(env_tag)
 
-    # validate slug
-    get_slug(slug)
-
-    # validate installed
-    installed_info = get_installed_slug(slug)
-
-    command = ["mise", "link", f"java@{slug}", link_path(installed_info["location"])]
+    command = ["mise", "link", f"java@{env_tag}", link_path(installed_info["location"])]
     result = subprocess.run(command, capture_output=True, text=True)
     if result.stderr:
         out(f"{MARK_INVALID} {st_dim(result.stderr)}", highlight=False)
         raise typer.Exit(code=-1)
-
-    return mise_ls()
 

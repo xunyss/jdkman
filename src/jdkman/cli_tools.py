@@ -6,7 +6,7 @@ from .autocomplete import autocomplete_installed
 from .config import is_macos
 from .console import log, out, table, MARK_CHECK, st_hig, st_dim
 from .detect import exec_java_home
-from .mise import mise_link, mise_ls
+from .mise import validate_mise_installed, mise_link, mise_ls
 
 
 app = typer.Typer()
@@ -41,6 +41,7 @@ if is_macos():
 @app.command(rich_help_panel="Tools")
 def mise(
         distro: Annotated[str, typer.Argument(
+            metavar="DISTRO|ALIAS",
             help="JVM distribution name to register as a mise symlink. (omit to list)",
             autocompletion=autocomplete_installed
         )] = None
@@ -55,7 +56,12 @@ def mise(
     log(f"mise()")
     log(f"  distro: {distro}")
 
-    mise_tools = mise_link(distro) if distro else mise_ls()
+    validate_mise_installed()
+
+    if distro:
+        mise_link(distro)
+
+    mise_tools = mise_ls()
     tab = table("mise_tool", "version", "symlink", "installed", "active", "requested")
     for mise_tool in mise_tools:
         is_link = True if mise_tool.get("symlinked_to") else False

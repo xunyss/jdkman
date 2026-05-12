@@ -132,7 +132,7 @@ def get_managed(sort: bool = False, divided: bool = False) -> dict[str, Any]:
     return installed | aliases
 
 
-def get_installed_slug(slug: str):
+def get_installed_slug(slug: str) -> dict[str, Any]:
     log(f"get_installed_slug()")
     log(f"  slug: {slug}")
 
@@ -144,17 +144,24 @@ def get_installed_slug(slug: str):
     return installed[slug]
 
 
+def get_managed_slug(env_tag: str) -> dict[str, Any]:
+    if env_tag not in get_managed():
+        out(f"{MARK_INVALID} {st_div(env_tag)} is invalid!", highlight=False)
+        raise typer.Exit(code=-1)
+    return get_installed_slug(get_aliases().get(env_tag, env_tag))
+
+
 def get_outdated() -> dict[str, dict[str, Any]]:
     log(f"get_outdated()")
 
     slugs = fetch_slugs()
     return {
         slug: {
-            "installed": managed_info["version"],
+            "installed": installed_info["version"],
             "latest": slugs[slug]["latest"],
         }
-        for slug, managed_info in get_installed().items()
-        if version_key(managed_info["version"]) < version_key(slugs[slug]["latest"])
+        for slug, installed_info in get_installed().items()
+        if version_key(installed_info["version"]) < version_key(slugs[slug]["latest"])
     }
 
 

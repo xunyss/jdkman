@@ -86,13 +86,13 @@ def ls():
     _outdated = get_outdated().keys()
     # get_installed()
     tab = table("distro", "version", "status", "location")
-    for slug, managed_info in get_installed(sort=True).items():
+    for slug, installed_info in get_installed(sort=True).items():
         tab.add_row(
             slug,
-            st_dim(managed_info["version"]),
+            st_dim(installed_info["version"]),
             slug not in _outdated and f"{MARK_CHECK} {st_dim('latest')}"
                 or f"{MARK_WARNING} {st_dim('outdated')}",
-            st_dim(shorten(managed_info["location"]))
+            st_dim(shorten(installed_info["location"]))
         )
     out(tab if tab.row_count > 0
         else f"{MARK_CHECK} No installed JVM distributions.")
