@@ -5,7 +5,6 @@ Tests for jdkman/environments.py
 모든 경로를 monkeypatch로 tmp_path 아래로 리다이렉트한다.
 """
 import json
-from pathlib import Path
 
 import pytest
 import typer
@@ -334,3 +333,4 @@ def test_get_env_aliases_uninstalled_slug_version_is_none(managed_db):
     aliases = environments.get_env_aliases()
     entry = next(a for a in aliases if a["alias"] == "ghost")
     assert entry["version"] is None
+

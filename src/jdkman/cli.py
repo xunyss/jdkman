@@ -15,7 +15,7 @@ from .console import (
     MARK_CHECK, MARK_WARNING,
     st_emp, st_hig, st_dim
 )
-from .installer import install_jvm, uninstall_jvm, upgrade_jvm
+from .installer import install_jvm, uninstall_jvm, upgrade_jvm, cleanup_cache
 from .registry import get_installed, get_outdated, list_vendors, list_editions, get_slugs
 from .utils import shorten
 
@@ -283,6 +283,21 @@ def upgrade(
 
     upgraded_dir = upgrade_jvm(distro)
     out(f"{MARK_CHECK} Upgraded: {st_emp(distro)} {st_dim(upgraded_dir)}", highlight=False)
+
+
+@app.command(name="cl", hidden=True)
+@app.command(rich_help_panel="Managements")
+def cleanup():
+    """
+    Remove application cache data.  [dim]\\[aliases: cl][/dim]
+
+    Examples:
+    -  jdk cleanup
+    """
+    log(f"cleanup()")
+
+    cleanup_cache()
+    out(f"{MARK_CHECK} Cache cleaned.")
 
 
 @app.callback(

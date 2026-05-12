@@ -152,3 +152,4 @@ def test_extract_archive_unsupported_format(tmp_path):
     archive.write_bytes(b"PK\x03\x04")  # zip magic bytes
     with pytest.raises(ValueError, match="Unsupported archive format"):
         extract_archive(archive, tmp_path)
+

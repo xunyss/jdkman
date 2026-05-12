@@ -1,6 +1,6 @@
 [project]
 name = "jdkman"
-version = "0.4.11"
+version = "0.4.12"
 description = "A command-line tool for installing and managing OpenJDK distributions."
 authors = [{name = "junghun.song", email = "xunyss@gmail.com"}]
 readme = "README.md"

@@ -239,3 +239,4 @@ def test_fish_linux_uses_set_gx_syntax(fake_home, monkeypatch, capsys):
     out = capsys.readouterr().out
     assert f'set -gx JAVA_HOME "{location}"' in out
     assert f'set -gx PATH "{location}/bin"' in out
+

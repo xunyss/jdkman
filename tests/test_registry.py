@@ -2,7 +2,6 @@ import json
 from pathlib import Path
 
 import pytest
-import typer
 
 import jdkman.registry as registry
 
@@ -387,3 +386,4 @@ def test_get_dist_returns_merged_info(monkeypatch):
     assert dist["version"] == "21.0.5+11"
     assert dist["file_type"] == "tar.gz"
     assert dist["url"] == "https://example.com/zulu.tar.gz"
+
