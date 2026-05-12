@@ -2,11 +2,12 @@ from typing import Annotated
 
 import typer
 
-from .autocomplete import autocomplete_installed
+from .autocomplete import autocomplete_managed
 from .config import is_macos
 from .console import log, out, table, MARK_CHECK, st_hig, st_dim
 from .detect import exec_java_home
 from .mise import validate_mise_installed, mise_link, mise_ls
+from .utils import shorten
 
 
 app = typer.Typer()
@@ -43,7 +44,7 @@ def mise(
         distro: Annotated[str, typer.Argument(
             metavar="DISTRO|ALIAS",
             help="JVM distribution name to register as a mise symlink. (omit to list)",
-            autocompletion=autocomplete_installed
+            autocompletion=autocomplete_managed
         )] = None
 ):
     """
@@ -62,17 +63,18 @@ def mise(
         mise_link(distro)
 
     mise_tools = mise_ls()
-    tab = table("mise_tool", "version", "symlink", "installed", "active", "requested")
+    tab = table("mise_tool", "version", "symlink", "installed", "active", "source", "requested")
     for mise_tool in mise_tools:
         is_link = True if mise_tool.get("symlinked_to") else False
         is_active = mise_tool.get("active")
         tab.add_row(
-            st_dim("java"),
-            st_hig(mise_tool["version"]) if is_active else mise_tool["version"],
-            is_link and MARK_CHECK or None,
-            mise_tool["installed"] and MARK_CHECK or None,
+            is_active and "java" or st_dim("java"),
+            st_hig(mise_tool["version"]) if is_active else st_dim(mise_tool["version"]),
+            is_link and st_dim(MARK_CHECK) or None,
+            mise_tool["installed"] and st_dim(MARK_CHECK) or None,
             is_active and MARK_CHECK or None,
-            st_dim(mise_tool["requested_version"]) if is_active else None
+            is_active and shorten(mise_tool["source"]["path"]) or None,
+            mise_tool["requested_version"] if is_active else None
         )
     out(tab if tab.row_count > 0
         else f"{MARK_CHECK} No mise java tools found.")
