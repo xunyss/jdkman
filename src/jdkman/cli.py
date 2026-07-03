@@ -9,7 +9,9 @@ from .cli_about import app as about_app, show_version
 from .cli_dev import app as dev_app
 from .cli_env import app as env_app
 from .cli_tools import app as tools_app
-from .config import is_dev, FORCE_VERBOSE, init_dirs
+from .config import (
+    is_dev, FORCE_VERBOSE, init_dirs, _platform_system, _platform_machine, is_macos, is_linux, is_windows
+)
 from .console import (
     update_state, log, out, table,
     MARK_CHECK, MARK_WARNING,
@@ -69,6 +71,11 @@ def callback_verbose(value: bool):
 
     log(f"callback_verbose()")
     log(f"  verbose: {value}")
+    log(f"  _platform_system: {_platform_system}")
+    log(f"  _platform_machine: {_platform_machine}")
+    log(f"  is_linux: {is_linux()}")
+    log(f"  is_macos: {is_macos()}")
+    log(f"  is_windows: {is_windows()}")
 
 
 @app.command(name="list", rich_help_panel="Managements")
