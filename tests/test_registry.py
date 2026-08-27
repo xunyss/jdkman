@@ -387,3 +387,15 @@ def test_get_dist_returns_merged_info(monkeypatch):
     assert dist["file_type"] == "tar.gz"
     assert dist["url"] == "https://example.com/zulu.tar.gz"
 
+
+# ── update_slugs ──────────────────────────────────────────────────────────────
+
+def test_update_slugs_clears_and_refetches_cache(monkeypatch):
+    calls = []
+    monkeypatch.setattr(registry, "clear_catalog", lambda: calls.append("clear"))
+    monkeypatch.setattr(registry, "fetch_artifacts", lambda: calls.append("fetch"))
+
+    registry.update_slugs()
+
+    assert calls == ["clear", "fetch"]
+
