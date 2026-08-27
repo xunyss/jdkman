@@ -6,8 +6,7 @@ import typer
 from .autocomplete import autocomplete_slugs
 from .catalog import fetch_artifacts
 from .config import CACHE_DIR
-from .console import st_emp, st_dim
-from .console import out, log, MARK_CHECK
+from .console import log, out, MARK_CHECK, st_emp, st_dim
 from .detect import scan_unmanaged
 from .installer import download_jvm
 from .registry import get_installed, get_aliases, get_managed, get_slug, get_dist

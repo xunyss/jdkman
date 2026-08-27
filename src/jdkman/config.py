@@ -8,6 +8,10 @@ from typing import Any
 
 
 #---------------------------------------------------------------------------------------------------
+_platform_system = platform.system().lower()
+_platform_machine = platform.machine().lower()
+
+#---------------------------------------------------------------------------------------------------
 def get_jvm_api_url() -> str:
     """
     JVM DATA API
@@ -18,34 +22,44 @@ def get_jvm_api_url() -> str:
       architecture: aarch64, arm32, i686, x86_64
     """
     _OS_MAP = {
-        "Linux": "linux",
-        "Darwin": "macosx",
-        "Windows": "windows",
+        "linux": "linux",
+        "darwin": "macosx",
+        "windows": "windows",
     }
     _ARCH_MAP = {
-        "arm64": "aarch64",
-        "aarch64": "aarch64",
-        "armv7l": "arm32",
-        "x86_64": "x86_64",
-        "i686": "i686",
+        # aarch64 (ARM 64-bit)
+        "aarch64": "aarch64",  # Linux
+        "arm64": "aarch64",    # macOS (Apple Silicon), Windows -> "ARM64"
+        # arm32 (ARM 32-bit)
+        "armv7l": "arm32",     # Linux
+        "armv6l": "arm32",     # Linux
+        "arm": "arm32",        # Windows -> "ARM"
+        # x86_64 (64-bit Intel/AMD)
+        "x86_64": "x86_64",    # Linux, macOS
+        "amd64": "x86_64",     # Windows -> "AMD64", BSD
+        # i686 (32-bit x86)
+        "i686": "i686",        # Linux
+        "i586": "i686",
+        "i386": "i686",
+        "x86": "i686",         # Windows
     }
-    _os = _OS_MAP[platform.system()]
-    _arch = _ARCH_MAP[platform.machine()]
+    _os = _OS_MAP[_platform_system]
+    _arch = _ARCH_MAP[_platform_machine]
     return f"https://mise-java.jdx.dev/jvm/ga/{_os}/{_arch}.json"
 
 
 def platform_name() -> str:
-    return f"{platform.system().lower()}-{platform.machine()}"
+    return f"{_platform_system}-{_platform_machine}"
 
 
 def is_macos():
-    return platform.system() == "Darwin"
+    return _platform_system == "darwin"
 
 def is_windows():
-    return platform.system() == "Windows"
+    return _platform_system == "windows"
 
 def is_linux():
-    return platform.system() == "Linux"
+    return _platform_system == "linux"
 
 
 def is_dev() -> bool:
@@ -61,7 +75,7 @@ def is_dev() -> bool:
 
 #---------------------------------------------------------------------------------------------------
 APP_NAME = "jdkman"
-APP_VERSION =version(APP_NAME)
+APP_VERSION = version(APP_NAME)
 JVM_API_URL = get_jvm_api_url()
 
 #---------------------------------------------------------------------------------------------------
