@@ -181,7 +181,7 @@ Upgrade an installed distribution to the latest patch version.
 
 ```bash
 jdk upgrade zulu-21
-jdk upd zulu-21       # alias
+jdk upg zulu-21       # alias
 ```
 
 ---
@@ -192,6 +192,18 @@ List installed distributions that have newer versions available.
 
 ```bash
 jdk outdated
+jdk od          # alias
+```
+
+---
+
+#### `jdk update`
+
+Sync the local JVM database with the latest release data, bypassing the cache.
+
+```bash
+jdk update
+jdk ud          # alias
 ```
 
 ---
