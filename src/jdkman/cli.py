@@ -146,7 +146,7 @@ def editions():
 @app.command(name="rl", hidden=True)
 @app.command(rich_help_panel="Managements")
 def remote(
-        distro: Annotated[str, typer.Argument(
+        distro: Annotated[str | None, typer.Argument(
             help="Filter by distro. (e.g. zulu-21, temurin, ora)"
         )] = None,
         show_all: Annotated[bool, typer.Option(
