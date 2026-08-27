@@ -6,8 +6,8 @@ from typing import Any
 import typer
 from rich.pretty import pretty_repr
 
-from .catalog import fetch_slugs
-from .config import MANAGED_JVM_DB
+from .catalog import fetch_slugs, fetch_artifacts
+from .config import MANAGED_JVM_DB, clear_catalog
 from .console import log, out, MARK_INVALID, st_emp, st_div
 from .utils import version_key
 
@@ -225,4 +225,11 @@ def get_dist(slug: str, version: str | None = None) -> dict[str, Any]:
         "java_version": target_version["java_version"],
         "version": target_version["version"],
     } | target_dist
+
+
+def update_slugs():
+    log(f"update_slugs()")
+
+    clear_catalog()
+    fetch_artifacts()
 

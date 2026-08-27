@@ -16,7 +16,7 @@ from .console import (
     st_emp, st_hig, st_dim
 )
 from .installer import install_jvm, uninstall_jvm, upgrade_jvm, cleanup_cache
-from .registry import get_installed, get_outdated, list_vendors, list_editions, get_slugs
+from .registry import get_installed, get_outdated, list_vendors, list_editions, get_slugs, update_slugs
 from .utils import shorten
 
 
@@ -193,11 +193,11 @@ def remote(
     out(tab)
 
 
-@app.command(name="out", hidden=True)
+@app.command(name="od", hidden=True)
 @app.command(rich_help_panel="Managements")
 def outdated():
     """
-    List outdated JVM distributions.  [dim]\\[aliases: out][/dim]
+    List outdated JVM distributions.  [dim]\\[aliases: od][/dim]
 
     Examples:
     -  jdk outdated
@@ -213,7 +213,22 @@ def outdated():
             st_dim(outdated_info["latest"])
         )
     out(tab if tab.row_count > 0
-        else f"{MARK_CHECK} No outdated JVM distributions.")
+        else f"{MARK_CHECK} All installed JVM distributions are up-to-date.")
+
+
+@app.command(name="ud", hidden=True)
+@app.command(rich_help_panel="Managements")
+def update():
+    """
+    Update JVM Database.  [dim]\\[aliases: ud][/dim]
+
+    Examples:
+    -  jdk update
+    """
+    log(f"update()")
+
+    update_slugs()
+    out(f"{MARK_CHECK} JVM Database is updated.")
 
 
 @app.command(name="add", hidden=True, no_args_is_help=True)
@@ -262,7 +277,7 @@ def uninstall(
     out(f"{MARK_CHECK} Uninstalled: {st_emp(distro)} {st_dim(uninstalled_dir)}", highlight=False)
 
 
-@app.command(name="upd", hidden=True, no_args_is_help=True)
+@app.command(name="upg", hidden=True, no_args_is_help=True)
 @app.command(rich_help_panel="Managements", no_args_is_help=True)
 def upgrade(
         distro: Annotated[str, typer.Argument(
@@ -272,7 +287,7 @@ def upgrade(
         )]
 ):
     """
-    Upgrade an installed JVM distribution.  [dim]\\[aliases: upd][/dim]
+    Upgrade an installed JVM distribution.  [dim]\\[aliases: upg][/dim]
 
     Examples:
     -  jdk upgrade zulu-21

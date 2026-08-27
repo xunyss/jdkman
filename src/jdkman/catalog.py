@@ -37,7 +37,7 @@ def fetch_artifacts() -> list[dict[str, Any]]:
         artifacts: list[dict[str, Any]] = response.json()
         cache_catalog(artifacts)
 
-        out(f"{MARK_CHECK} Fetched: {len(artifacts)}")
+        out(f"{MARK_CHECK} Fetched releases: {len(artifacts)}")
 
     return artifacts
 

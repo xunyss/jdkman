@@ -67,7 +67,7 @@ JVM_API_URL = get_jvm_api_url()
 #---------------------------------------------------------------------------------------------------
 CACHE_DIR = Path.home() / ".cache" / APP_NAME
 CATALOG_CACHE_FILE = CACHE_DIR / ".catalog"
-CATALOG_CACHE_TTL = 60 * 60 * 12  # 12 hours (sec)
+CATALOG_CACHE_TTL = 60 * 60 * 24 * 7  # 7 days (sec)
 
 CONFIG_DIR = Path.home() / ".config" / APP_NAME
 MANAGED_JVM_DB = CONFIG_DIR / "managed"
@@ -94,6 +94,9 @@ def cached_catalog() -> str | None:
 
 def cache_catalog(catalog: list[dict[str, Any]]):
     CATALOG_CACHE_FILE.write_text(json.dumps(catalog))
+
+def clear_catalog():
+    CATALOG_CACHE_FILE.unlink(missing_ok=True)
 
 
 def init_dirs():
