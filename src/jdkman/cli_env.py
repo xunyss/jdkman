@@ -154,10 +154,10 @@ def unuse(
 
 @app.command(name="alias", rich_help_panel="Environments")
 def set_alias(
-        alias: Annotated[str, typer.Argument(
+        alias: Annotated[str | None, typer.Argument(
             help="Alias name to create.",
         )] = None,
-        distro: Annotated[str, typer.Argument(
+        distro: Annotated[str | None, typer.Argument(
             help="Installed JVM distribution name to map to.",
             autocompletion=autocomplete_installed
         )] = None,

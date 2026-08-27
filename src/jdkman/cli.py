@@ -15,7 +15,7 @@ from .config import (
 from .console import (
     update_state, log, out, table,
     MARK_CHECK, MARK_WARNING,
-    st_emp, st_hig, st_dim
+    st_emp, st_hig, st_div, st_dim
 )
 from .installer import install_jvm, uninstall_jvm, upgrade_jvm, cleanup_cache
 from .registry import get_installed, get_outdated, list_vendors, list_editions, get_slugs, update_slugs
@@ -92,13 +92,11 @@ def ls():
 
     _outdated = get_outdated().keys()
     # get_installed()
-    tab = table("distro", "version", "status", "location")
+    tab = table("distro", "version", "location")
     for slug, installed_info in get_installed(sort=True).items():
         tab.add_row(
             slug,
-            st_dim(installed_info["version"]),
-            slug not in _outdated and f"{MARK_CHECK} {st_dim('latest')}"
-                or f"{MARK_WARNING} {st_dim('outdated')}",
+            (slug not in _outdated and f"{MARK_CHECK}" or f"{MARK_WARNING}") + " " + st_dim(installed_info["version"]),
             st_dim(shorten(installed_info["location"]))
         )
     out(tab if tab.row_count > 0
@@ -216,8 +214,8 @@ def outdated():
     for slug, outdated_info in get_outdated().items():
         tab.add_row(
             slug,
-            st_dim(outdated_info["installed"]),
-            st_dim(outdated_info["latest"])
+            f"{MARK_WARNING} {st_dim(outdated_info['installed'])}",
+            st_div(outdated_info['latest'])
         )
     out(tab if tab.row_count > 0
         else f"{MARK_CHECK} All installed JVM distributions are up-to-date.")
