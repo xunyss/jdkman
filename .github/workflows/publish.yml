@@ -91,10 +91,11 @@ jobs:
           VERSION=${{ steps.version.outputs.VERSION }}
           gh release create "v${VERSION}" --repo xunyss/jdkman --title "v${VERSION}" --notes "Release v${VERSION}" jdkman-*.tar.gz
 
-      - name: Insert bottle block into Formula
+      - name: Merge bottle block into Formula
         run: |
           JSON=$(ls jdkman--*.bottle.json jdkman-*.bottle.json 2>/dev/null | head -1)
-          python scripts/homebrew/insert_bottle.py "$JSON" homebrew-tap/Formula/jdkman.rb
+          brew bottle --merge --write --no-commit "$JSON"
+          rsync -a "$(brew --repo xunyss/tap)/Formula/" homebrew-tap/Formula/
 
       - uses: Homebrew/actions/git-user-config@main
 

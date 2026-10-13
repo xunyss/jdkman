@@ -13,7 +13,7 @@ git tag v0.2.11 && git push origin v0.2.11
                   ├─ Formula 생성 (generate_formula.py)
                   ├─ bottle 빌드 (brew bottle)
                   ├─ GitHub Release에 bottle 업로드
-                  ├─ Formula에 bottle 블록 삽입 (insert_bottle.py)
+                  ├─ Formula에 bottle 블록 삽입 (brew bottle --merge --write)
                   └─ homebrew-tap 레포에 커밋
 ```
 
@@ -238,11 +238,26 @@ https://github.com/xunyss/jdkman/releases/download/v0.2.11/
 
 ---
 
-## 6. Bottle 블록 삽입 (`insert_bottle.py`)
+## 6. Bottle 블록 삽입 (`brew bottle --merge --write`)
 
 ### 역할
 
 `brew bottle --json`이 생성한 `.bottle.json`을 읽어, formula에 `bottle do ... end` 블록을 삽입한다.
+직접 regex로 끼워 넣는 custom 스크립트(`insert_bottle.py`) 대신, Homebrew 공식 명령을 사용한다.
+
+```bash
+JSON=$(ls jdkman--*.bottle.json jdkman-*.bottle.json 2>/dev/null | head -1)
+brew bottle --merge --write --no-commit "$JSON"
+rsync -a "$(brew --repo xunyss/tap)/Formula/" homebrew-tap/Formula/
+```
+
+- `--merge`: `.bottle.json`을 읽어 `bottle do ... end` 블록을 생성한다.
+- `--write`: 생성한 블록을 formula 파일에 바로 반영한다. (기본적으로 커밋도 생성됨)
+- `--no-commit`: 이 단계에서 자동 커밋을 만들지 않는다. 커밋은 뒤의 `7. Tap 업데이트` 단계에서 한 번에 수행한다.
+
+`brew bottle --write`는 **brew가 tap으로 인식한 경로**(`$(brew --repo xunyss/tap)/Formula/jdkman.rb`)의 formula 파일을 직접 수정한다.
+이 경로는 `brew tap xunyss/tap homebrew-tap` + `rsync`로 복사된 별도 사본이라, 수정 결과를 다시 `homebrew-tap/Formula/`로 `rsync`해 와야
+실제로 커밋/푸시할 `homebrew-tap` 체크아웃에 반영된다.
 
 ### 입력: `.bottle.json`
 
@@ -261,7 +276,7 @@ https://github.com/xunyss/jdkman/releases/download/v0.2.11/
 }
 ```
 
-### 출력: formula에 삽입되는 블록
+### 결과: formula에 삽입되는 블록
 
 ```ruby
   bottle do
@@ -271,19 +286,8 @@ https://github.com/xunyss/jdkman/releases/download/v0.2.11/
   end
 ```
 
-### 삽입 위치
-
-`license "..."` 줄 바로 뒤에 삽입된다.
-
-```ruby
-  license "MIT"
-              ↑ 여기 아래에 bottle 블록 삽입
-  bottle do
-    ...
-  end
-```
-
-`cellar: :any_skip_relocation`은 이 패키지가 Homebrew Cellar의 어느 경로에도 재배치 가능함을 의미한다. Python virtualenv 기반 설치는 절대 경로에 의존하지 않으므로 이 값이 사용된다.
+`license "..."` 줄 바로 뒤에 삽입된다. `cellar: :any_skip_relocation`은 이 패키지가 Homebrew Cellar의 어느 경로에도
+재배치 가능함을 의미한다. Python virtualenv 기반 설치는 절대 경로에 의존하지 않으므로 이 값이 사용된다.
 
 ---
 
