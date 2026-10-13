@@ -61,13 +61,10 @@ if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then exit 1; fi
 
 배포 전에 `pyproject.toml`의 버전을 태그와 맞춰야 한다.
 
-### PyPI 전파 대기
-
-```bash
-sleep 60
-```
-
-PyPI 배포 직후 `brew update-python-resources`(`4. 의존성 resource 생성`)가 PyPI에서 방금 publish한 `jdkman` 버전을 조회하므로, 배포 완료 전에 조회하면 실패한다. 60초 대기로 전파를 기다린다.
+Homebrew 배포 과정은 `jdkman` 자신의 PyPI 메타데이터를 조회하지 않는다 (`4. 의존성 resource 생성` 참고 —
+메인 패키지는 GitHub archive에서 직접 메타데이터를 읽는다). 그래서 PyPI 전파를 기다리는 `sleep` 같은
+단계가 필요 없다. `needs: publish-pypi`는 "PyPI 배포가 끝난 뒤에만 Homebrew도 배포한다"는 순서 보장
+목적으로만 남아있고, Homebrew job 자체의 동작에는 더 이상 PyPI 배포 완료가 기술적으로 필요하지 않다.
 
 ---
 
@@ -172,28 +169,29 @@ change를 내는 경우에만 재검토가 필요하다.) 그대로 유지한다
 ### 실행 방식
 
 ```bash
-brew update-python-resources --package-name jdkman --version 0.2.11 \
-  --ignore-main-package-cooldown --exclude-packages=colorama \
-  xunyss/tap/jdkman
+brew update-python-resources --exclude-packages=colorama xunyss/tap/jdkman
 ```
 
-Homebrew 공식 명령으로, PyPI에 실제 게시된 `jdkman==0.2.11` 패키지의 `Requires-Dist` 메타데이터를 따라
-의존성 트리를 (pip 리졸버로) 해석하고, 각 의존성의 `resource "..." do ... end` 블록을 formula에 직접
-써 넣는다. 과거의 `generate_formula.py` 내 수동 PyPI 조회/`EXCLUDE` 셋 로직을 전부 대체한다.
+Homebrew 공식 명령으로, formula의 의존성 resource 블록을 자동으로 채운다. 과거의 `generate_formula.py`
+내 수동 PyPI 조회/`EXCLUDE` 셋 로직을 전부 대체한다.
 
-- `--package-name jdkman`: formula의 `url`이 PyPI가 아니라 GitHub archive이므로, 메인 패키지를 PyPI
-  패키지로 명시적으로 지정해야 한다. (안 주면 GitHub archive 자체를 pip로 분석하려고 시도함)
-- `--version`: 방금 PyPI에 publish한 버전을 명시한다.
-- `--ignore-main-package-cooldown`: PyPI는 기본적으로 "최근 1일 이내 업로드된 패키지"를 의존성 해석에서
-  제외하는 cooldown 필터가 있다. jdkman은 매 배포마다 직전에 막 publish한 버전을 참조해야 하므로 메인
-  패키지에 대해서만 이 필터를 건너뛴다. (서드파티 tap에서만 유효한 옵션)
+`--package-name`/`--version`을 주지 않으면, brew는 메인 패키지를 formula의 `url`(GitHub archive) 그
+자체로 간주한다 (`utils/pypi.rb`의 `Package#basic_metadata` `@is_url` 분기). 즉:
+
+- **메인 패키지(`jdkman` 자신)의 이름/버전은 GitHub archive를 직접 pip로 받아서 메타데이터를 읽어
+  알아낸다. PyPI를 전혀 거치지 않는다** — 그래서 PyPI에 `jdkman`이 먼저 올라가 있을 필요가 없고
+  (`2. 전체 배포 흐름`의 PyPI 전파 대기 참고), PyPI의 "최근 1일 이내 업로드 제외" cooldown 필터도
+  적용되지 않는다.
+- `requests`, `typer` 같은 **의존성들**은 여전히 PyPI에서 조회한다 (이미 안정적으로 게시된 서드파티
+  패키지라 cooldown 문제가 없다).
 - `--exclude-packages=colorama`: `colorama`는 click/typer의 Windows 전용(`platform_system == "Windows"`)
   의존성이라 macOS에서 pip가 정상적으로 환경 마커를 평가하면 애초에 리포트에 나타나지 않지만, 방어적으로
   명시해 둔다. (리포트에 없으면 조용히 무시되고, 있으면 제외됨)
 
 이 명령은 내부적으로 `python@3.14` formula가 설치되어 있어야 하며, 없으면 자동으로 설치한다
-(`Formula[python_name].ensure_installed!`). dev 전용 의존성(`pytest` 등)은 PyPI에 게시된 패키지
-메타데이터에 원래 포함되지 않으므로 별도로 제외할 필요가 없다.
+(`Formula[python_name].ensure_installed!`). dev 전용 의존성(`pytest` 등)은 `pyproject.toml`의
+`[project.dependencies]`에 없으므로(=`[dependency-groups] dev`에만 있음) 원래 메타데이터에 포함되지
+않아 별도로 제외할 필요가 없다.
 
 이 명령은 `brew tap xunyss/tap homebrew-tap`으로 등록된 tap 경로(`$(brew --repo xunyss/tap)/Formula/jdkman.rb`)
 의 formula 파일을 직접 수정한다. `homebrew-tap/Formula/jdkman.rb`로의 반영은 `7. Bottle 블록 삽입` 단계의

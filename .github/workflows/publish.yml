@@ -43,9 +43,6 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v7
 
-      - name: Wait for PyPI to propagate
-        run: sleep 60
-
       - name: Get version
         id: version
         run: echo "VERSION=$(uv version --short)" >> $GITHUB_OUTPUT
@@ -72,10 +69,7 @@ jobs:
           rsync -a ./homebrew-tap/ $(brew --repo xunyss/tap)/
 
       - name: Generate Python dependency resources
-        run: |
-          brew update-python-resources --package-name jdkman --version ${{ steps.version.outputs.VERSION }} \
-            --ignore-main-package-cooldown --exclude-packages=colorama \
-            xunyss/tap/jdkman
+        run: brew update-python-resources --exclude-packages=colorama xunyss/tap/jdkman
 
       - name: Build bottle
         run: |
