@@ -10,7 +10,8 @@ git tag v0.2.11 && git push origin v0.2.11
     ├─ [ubuntu] PyPI 배포 (sdist + wheel)
     │
     └─ [macos]  Homebrew 배포
-                  ├─ Formula 생성 (generate_formula.py)
+                  ├─ Formula 골격 생성 (generate_formula.py)
+                  ├─ 의존성 resource 블록 생성 (brew update-python-resources)
                   ├─ bottle 빌드 (brew bottle)
                   ├─ GitHub Release에 bottle 업로드
                   ├─ Formula에 bottle 블록 삽입 (brew bottle --merge --write)
@@ -66,11 +67,11 @@ if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then exit 1; fi
 sleep 60
 ```
 
-PyPI 배포 직후 formula 생성 스크립트가 PyPI API로 sha256을 조회하므로, 배포 완료 전에 API가 호출되면 실패한다. 60초 대기로 전파를 기다린다.
+PyPI 배포 직후 `brew update-python-resources`(`4. 의존성 resource 생성`)가 PyPI에서 방금 publish한 `jdkman` 버전을 조회하므로, 배포 완료 전에 조회하면 실패한다. 60초 대기로 전파를 기다린다.
 
 ---
 
-## 3. Formula 생성 (`generate_formula.py`)
+## 3. Formula 골격 생성 (`generate_formula.py`)
 
 ### 실행 방식
 
@@ -79,14 +80,13 @@ PyPI 배포 직후 formula 생성 스크립트가 PyPI API로 sha256을 조회�
 SHA256=$(curl -sL "https://github.com/xunyss/jdkman/archive/refs/tags/v0.2.11.tar.gz" \
   | shasum -a 256 | cut -d' ' -f1)
 
-# 2. formula 생성
-uv export --no-hashes --format requirements-txt \
-  | python scripts/homebrew/generate_formula.py 0.2.11 $SHA256 \
+# 2. formula 골격 생성 (의존성 resource는 아직 없음)
+python scripts/homebrew/generate_formula.py 0.2.11 $SHA256 \
   > homebrew-tap/Formula/jdkman.rb
 ```
 
-`uv export`로 의존성 목록을 뽑아 stdin으로 전달하고, PyPI에서 각 패키지의 URL과 sha256을 조회해 formula를 생성한다.
-GitHub archive sha256은 CI에서 별도로 계산해 인자로 전달한다.
+PyPI 의존성 조회 없이 `url`/`sha256`/`install`/`test` 블록만 있는 formula 골격을 만든다.
+의존성 resource 블록은 `4. 의존성 resource 생성` 단계에서 공식 명령으로 채운다.
 
 ### 생성되는 Formula 구조
 
@@ -101,53 +101,36 @@ class Jdkman < Formula
   license "MIT"
 
   depends_on "rust" => :build   # Rust 바이너리 빌드 시에만 필요 (사용자 PC에는 불필요)
-  depends_on "python@3"
-
-  resource "jdkman-whl" do       # jdkman wheel (설치 시 사용)
-    url "https://files.pythonhosted.org/.../jdkman-0.2.11-py3-none-any.whl",
-        using: :nounzip
-    sha256 "..."
-  end
-
-  resource "requests" do         # 의존 패키지 (wheel 또는 sdist)
-    url "..."
-    sha256 "..."
-  end
+  depends_on "python@3.14"
 
   def install
     system "cargo", "build", "--release", "--manifest-path", "hook/Cargo.toml"
     bin.install "hook/target/release/jdk-hook-env"
 
-    venv = virtualenv_create(libexec, "python3")
-    resources.each do |r|
-      r.stage do
-        whl = Pathname.pwd.glob("*.whl").first
-        system libexec/"bin/python", "-m", "pip", "install", "--no-deps", whl
-      end
-    end
-    bin.install_symlink libexec/"bin/jdk"
+    virtualenv_install_with_resources
     # zsh/bash/fish 자동완성 생성
     ...
   end
 end
 ```
 
-### GitHub archive vs wheel 역할 분리
+`virtualenv_install_with_resources`는 Homebrew의 Python CLI 표준 설치 패턴이다 (`language/python.rb`).
+내부적으로 다음을 수행한다.
 
-| 항목 | 사용 위치 | 이유 |
-|---|---|---|
-| `url` (GitHub archive) | formula 상단 / `def install`에서 Rust 빌드 | `hook/` 디렉토리 포함, 태그 푸시 즉시 사용 가능 |
-| `resource "jdkman-whl"` (wheel) | `def install` 안에서 pip로 설치 | Python 빌드 도구 없이 wheel을 직접 설치 |
+1. venv 생성
+2. 선언된 `resource` 블록(의존성)을 전부 venv에 pip install
+3. **`buildpath`(= `url`에서 받은 GitHub archive 소스)를 그 자리에서 직접 pip install하고, 생성된 entry-point 스크립트(`jdk`)를 자동으로 `bin/`에 링크**
 
-GitHub archive는 태그 푸시 즉시 자동 생성되므로 Release 생성 전에도 접근 가능하다.
+즉 메인 패키지는 resource가 아니라 **소스에서 직접 빌드**된다. 과거엔 `jdkman-whl`이라는 가상의 resource를
+만들어 PyPI에 이미 올라간 완성된 wheel을 따로 받아 pip install하는 방식을 썼는데, 이는 Homebrew 표준과
+어긋나는 방식이었다 (표준 방식은 메인 패키지를 resource 목록에서 제외하고 buildpath에서 직접 빌드).
+지금은 표준 패턴으로 교체되어 `bin.install_symlink`도 더 이상 필요 없다 (자동으로 링크됨).
 
-### 의존성 처리
+### GitHub archive를 쓰는 이유
 
-```python
-EXCLUDE = {"pytest", "iniconfig", "pluggy", "packaging", "colorama"}
-```
-
-dev/test 전용 패키지는 제외한다. `colorama`는 Windows 전용이므로 macOS formula에서 불필요하다.
+PyPI sdist에는 `hook/`(Rust 소스) 디렉토리가 포함되어 있지 않다. Rust 바이너리를 빌드하려면 전체 git
+저장소 내용이 필요하므로, `url`은 PyPI가 아니라 GitHub archive를 가리킨다. GitHub archive는 태그 푸시
+즉시 자동 생성되므로 Release 생성 전에도 접근 가능하다.
 
 ### zsh 자동완성 패치
 
@@ -165,9 +148,53 @@ ZSH
 (zsh_completion/"_jdk").write zsh_script
 ```
 
+Homebrew에는 `generate_completions_from_executable`이라는 공식 completion 생성 헬퍼가 있고 `:click`/`:typer`
+포맷도 지원하지만, jdkman에는 그대로 맞지 않는다.
+
+- `:click` 포맷은 `_JDK_COMPLETE=<shell>_source` 형식(최신 click 순서)을 쓰는데, jdkman이 번들한 typer/click
+  버전에서 실제로 동작하는 건 `_JDK_COMPLETE=source_<shell>`(구버전 순서)이다.
+- `:typer` 포맷은 `jdk --show-completion <shell>`을 호출하는데, `cli.py`의 `intercept_args()`가 프로덕션
+  빌드에서 `--show-completion`/`--install-completion`을 의도적으로 막아놓았다.
+
+그래서 위 수동 `_JDK_COMPLETE=source_zsh` 방식은 실수가 아니라 의도된 선택이며, 그대로 유지한다.
+
 ---
 
-## 4. Bottle 빌드
+## 4. 의존성 resource 생성 (`brew update-python-resources`)
+
+### 실행 방식
+
+```bash
+brew update-python-resources --package-name jdkman --version 0.2.11 \
+  --ignore-main-package-cooldown --exclude-packages=colorama \
+  xunyss/tap/jdkman
+```
+
+Homebrew 공식 명령으로, PyPI에 실제 게시된 `jdkman==0.2.11` 패키지의 `Requires-Dist` 메타데이터를 따라
+의존성 트리를 (pip 리졸버로) 해석하고, 각 의존성의 `resource "..." do ... end` 블록을 formula에 직접
+써 넣는다. 과거의 `generate_formula.py` 내 수동 PyPI 조회/`EXCLUDE` 셋 로직을 전부 대체한다.
+
+- `--package-name jdkman`: formula의 `url`이 PyPI가 아니라 GitHub archive이므로, 메인 패키지를 PyPI
+  패키지로 명시적으로 지정해야 한다. (안 주면 GitHub archive 자체를 pip로 분석하려고 시도함)
+- `--version`: 방금 PyPI에 publish한 버전을 명시한다.
+- `--ignore-main-package-cooldown`: PyPI는 기본적으로 "최근 1일 이내 업로드된 패키지"를 의존성 해석에서
+  제외하는 cooldown 필터가 있다. jdkman은 매 배포마다 직전에 막 publish한 버전을 참조해야 하므로 메인
+  패키지에 대해서만 이 필터를 건너뛴다. (서드파티 tap에서만 유효한 옵션)
+- `--exclude-packages=colorama`: `colorama`는 click/typer의 Windows 전용(`platform_system == "Windows"`)
+  의존성이라 macOS에서 pip가 정상적으로 환경 마커를 평가하면 애초에 리포트에 나타나지 않지만, 방어적으로
+  명시해 둔다. (리포트에 없으면 조용히 무시되고, 있으면 제외됨)
+
+이 명령은 내부적으로 `python@3.14` formula가 설치되어 있어야 하며, 없으면 자동으로 설치한다
+(`Formula[python_name].ensure_installed!`). dev 전용 의존성(`pytest` 등)은 PyPI에 게시된 패키지
+메타데이터에 원래 포함되지 않으므로 별도로 제외할 필요가 없다.
+
+이 명령은 `brew tap xunyss/tap homebrew-tap`으로 등록된 tap 경로(`$(brew --repo xunyss/tap)/Formula/jdkman.rb`)
+의 formula 파일을 직접 수정한다. `homebrew-tap/Formula/jdkman.rb`로의 반영은 `7. Bottle 블록 삽입` 단계의
+`rsync`에서 한 번에 이루어진다 (두 단계가 같은 tap 경로 파일을 순서대로 수정하기 때문).
+
+---
+
+## 5. Bottle 빌드
 
 ### bottle이란
 
@@ -219,7 +246,7 @@ GitHub Release 파일명과 formula의 `root_url` 기반 다운로드 경로를 
 
 ---
 
-## 5. GitHub Release 생성
+## 6. GitHub Release 생성
 
 ```bash
 gh release create "v0.2.11" \
@@ -238,7 +265,7 @@ https://github.com/xunyss/jdkman/releases/download/v0.2.11/
 
 ---
 
-## 6. Bottle 블록 삽입 (`brew bottle --merge --write`)
+## 7. Bottle 블록 삽입 (`brew bottle --merge --write`)
 
 ### 역할
 
@@ -253,7 +280,7 @@ rsync -a "$(brew --repo xunyss/tap)/Formula/" homebrew-tap/Formula/
 
 - `--merge`: `.bottle.json`을 읽어 `bottle do ... end` 블록을 생성한다.
 - `--write`: 생성한 블록을 formula 파일에 바로 반영한다. (기본적으로 커밋도 생성됨)
-- `--no-commit`: 이 단계에서 자동 커밋을 만들지 않는다. 커밋은 뒤의 `7. Tap 업데이트` 단계에서 한 번에 수행한다.
+- `--no-commit`: 이 단계에서 자동 커밋을 만들지 않는다. 커밋은 뒤의 `8. Tap 업데이트` 단계에서 한 번에 수행한다.
 
 `brew bottle --write`는 **brew가 tap으로 인식한 경로**(`$(brew --repo xunyss/tap)/Formula/jdkman.rb`)의 formula 파일을 직접 수정한다.
 이 경로는 `brew tap xunyss/tap homebrew-tap` + `rsync`로 복사된 별도 사본이라, 수정 결과를 다시 `homebrew-tap/Formula/`로 `rsync`해 와야
@@ -291,7 +318,7 @@ rsync -a "$(brew --repo xunyss/tap)/Formula/" homebrew-tap/Formula/
 
 ---
 
-## 7. Tap 업데이트
+## 8. Tap 업데이트
 
 ```bash
 cd homebrew-tap
@@ -310,7 +337,7 @@ brew install xunyss/tap/jdkman
 
 ---
 
-## 8. Secrets
+## 9. Secrets
 
 | Secret | 용도 |
 |---|---|
@@ -321,7 +348,7 @@ brew install xunyss/tap/jdkman
 
 ---
 
-## 9. 배포 체크리스트
+## 10. 배포 체크리스트
 
 ```
 □ pyproject.toml의 version을 태그와 일치하도록 업데이트

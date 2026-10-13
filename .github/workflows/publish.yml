@@ -64,12 +64,18 @@ jobs:
           path: homebrew-tap
 
       - name: Generate Formula
-        run: uv export --no-hashes --format requirements-txt | python scripts/homebrew/generate_formula.py ${{ steps.version.outputs.VERSION }} ${{ steps.archive.outputs.SHA256 }} > homebrew-tap/Formula/jdkman.rb
+        run: python scripts/homebrew/generate_formula.py ${{ steps.version.outputs.VERSION }} ${{ steps.archive.outputs.SHA256 }} > homebrew-tap/Formula/jdkman.rb
 
       - name: Install Homebrew tap
         run: |
           brew tap xunyss/tap homebrew-tap
           rsync -a ./homebrew-tap/ $(brew --repo xunyss/tap)/
+
+      - name: Generate Python dependency resources
+        run: |
+          brew update-python-resources --package-name jdkman --version ${{ steps.version.outputs.VERSION }} \
+            --ignore-main-package-cooldown --exclude-packages=colorama \
+            xunyss/tap/jdkman
 
       - name: Build bottle
         run: |
