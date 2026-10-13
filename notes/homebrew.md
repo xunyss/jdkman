@@ -151,12 +151,19 @@ ZSH
 Homebrew에는 `generate_completions_from_executable`이라는 공식 completion 생성 헬퍼가 있고 `:click`/`:typer`
 포맷도 지원하지만, jdkman에는 그대로 맞지 않는다.
 
-- `:click` 포맷은 `_JDK_COMPLETE=<shell>_source` 형식(최신 click 순서)을 쓰는데, jdkman이 번들한 typer/click
-  버전에서 실제로 동작하는 건 `_JDK_COMPLETE=source_<shell>`(구버전 순서)이다.
+- `:click` 포맷은 `_JDK_COMPLETE=<shell>_source`를 쓴다. Click 8.0에서 완성 instruction 순서가
+  `source_<shell>` → `<shell>_source`로 바뀌었는데, **Typer는 자신의 CLI 앱 하위호환을 위해 이 순서를
+  일부러 원래대로(`source_<shell>`) 되돌리는 코드를 갖고 있다** (`typer/completion.py`의
+  `shell_complete()` 참고 — click 버전과 무관하게 항상 구 포맷을 받는다). 그래서 `:click` 포맷은 Typer
+  앱에는 애초에 맞지 않고, `_JDK_COMPLETE=source_zsh`가 (click 버전이 올라가도) 계속 정답이다.
+  직접 확인: `_JDK_COMPLETE=source_zsh jdk`는 정상 스크립트를 출력하고, brew의 `:click` 포맷대로
+  `_JDK_COMPLETE=zsh_source jdk`를 주면 `"Shell source not supported."` 에러가 난다.
 - `:typer` 포맷은 `jdk --show-completion <shell>`을 호출하는데, `cli.py`의 `intercept_args()`가 프로덕션
   빌드에서 `--show-completion`/`--install-completion`을 의도적으로 막아놓았다.
 
-그래서 위 수동 `_JDK_COMPLETE=source_zsh` 방식은 실수가 아니라 의도된 선택이며, 그대로 유지한다.
+그래서 위 수동 `_JDK_COMPLETE=source_zsh` 방식은 실수가 아니라 의도된 선택이며, typer를 업그레이드해도
+이 하위호환 코드가 typer 안에 남아있는 한 깨지지 않는다. (typer가 이 호환 코드를 제거하는 breaking
+change를 내는 경우에만 재검토가 필요하다.) 그대로 유지한다.
 
 ---
 
