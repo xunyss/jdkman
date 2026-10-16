@@ -56,7 +56,7 @@ class Jdkman < Formula
 
   depends_on "rust" => :build
   # depends_on "python@3"
-  depends_on "python@3.14"
+  depends_on "python@3.15"
 
   def install
     system "cargo", "build", "--release", "--manifest-path", "hook/Cargo.toml"
